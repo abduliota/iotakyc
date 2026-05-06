@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IOTA KYC — Agent Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0A1628;
+  --navy2:  #0F1F3D;
+  --navy3:  #162B52;
+  --blue:   #1E6FFF;
+  --blue2:  #4D8FFF;
+  --accent: #00D4FF;
+  --gold:   #F5A623;
+  --red:    #FF4757;
+  --green:  #00C896;
+  --orange: #FF8C42;
+  --white:  #FFFFFF;
+  --text:   #E2E8F0;
+  --muted:  #7A8BA6;
+  --border: rgba(255,255,255,0.07);
+  --card:   rgba(255,255,255,0.04);
+  --card2:  rgba(255,255,255,0.07);
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--navy2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+}
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .brand {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.sidebar-logo .product {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+  margin-top: 2px;
+}
+.sidebar-logo .sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.nav { padding: 16px 0; flex: 1; }
+.nav-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 20px 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 2px solid transparent;
+  font-size: 13px;
+  color: var(--muted);
+}
+.nav-item:hover { background: var(--card); color: var(--text); }
+.nav-item.active {
+  background: rgba(30,111,255,0.1);
+  color: var(--blue2);
+  border-left-color: var(--blue);
+}
+.nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--blue);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 99px;
+}
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+.agent-info { display: flex; align-items: center; gap: 10px; }
+.agent-avatar {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px; color: white;
+}
+.agent-name { font-weight: 600; color: var(--text); font-size: 12px; }
+.agent-role { color: var(--muted); font-size: 10px; }
+
+/* ── Main ─────────────────────────────────────────────────── */
+.main {
+  margin-left: 220px;
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Topbar ───────────────────────────────────────────────── */
+.topbar {
+  height: 56px;
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-title { font-size: 15px; font-weight: 600; color: var(--white); flex: 1; }
+.topbar-time { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(0,200,150,0.2);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 3px rgba(0,200,150,0.2)} 50%{box-shadow:0 0 0 6px rgba(0,200,150,0.1)} }
+
+/* ── Content ──────────────────────────────────────────────── */
+.content { padding: 28px; flex: 1; }
+
+/* ── KPI cards ────────────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.kpi-card:hover { border-color: rgba(255,255,255,0.15); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.kpi-card.blue::before   { background: var(--blue); }
+.kpi-card.yellow::before { background: var(--gold); }
+.kpi-card.green::before  { background: var(--green); }
+.kpi-card.red::before    { background: var(--red); }
+.kpi-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+.kpi-value { font-size: 36px; font-weight: 700; margin: 6px 0 4px; }
+.kpi-card.blue   .kpi-value { color: var(--blue2); }
+.kpi-card.yellow .kpi-value { color: var(--gold); }
+.kpi-card.green  .kpi-value { color: var(--green); }
+.kpi-card.red    .kpi-value { color: var(--red); }
+.kpi-sub { font-size: 11px; color: var(--muted); }
+.kpi-icon { position: absolute; top: 16px; right: 16px; font-size: 28px; opacity: 0.12; }
+
+/* ── Section header ───────────────────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-title { font-size: 15px; font-weight: 600; color: var(--white); }
+
+/* ── Filter tabs ──────────────────────────────────────────── */
+.filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all 0.15s;
+  background: transparent;
+}
+.tab:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+.tab.active { background: var(--blue); border-color: var(--blue); color: white; }
+
+/* ── Table ────────────────────────────────────────────────── */
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+table { width: 100%; border-collapse: collapse; }
+thead { background: rgba(255,255,255,0.03); }
+th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.td-name { font-weight: 600; color: var(--white); }
+.td-name small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; margin-top: 1px; font-family: 'DM Mono', monospace; }
+.td-empty { padding: 48px; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* ── Badges ───────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-submitted    { background: rgba(30,111,255,0.15); color: var(--blue2); }
+.badge-under_review { background: rgba(245,166,35,0.15); color: var(--gold); }
+.badge-approved     { background: rgba(0,200,150,0.15);  color: var(--green); }
+.badge-rejected     { background: rgba(255,71,87,0.15);  color: var(--red); }
+.badge-flagged      { background: rgba(255,140,66,0.15); color: var(--orange); }
+.badge-clear        { background: rgba(0,200,150,0.12);  color: var(--green); }
+.badge-flaggedwl    { background: rgba(255,71,87,0.12);  color: var(--red); }
+.badge-pending      { background: rgba(122,139,166,0.15);color: var(--muted); }
+
+/* ── Action btn ───────────────────────────────────────────── */
+.btn-review {
+  padding: 5px 12px;
+  background: rgba(30,111,255,0.15);
+  border: 1px solid rgba(30,111,255,0.3);
+  color: var(--blue2);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-review:hover { background: var(--blue); color: white; border-color: var(--blue); }
+
+/* ── Gov API Tester ───────────────────────────────────────── */
+.api-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.api-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.api-card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.api-name { font-size: 12px; font-weight: 700; color: var(--white); }
+.api-platform {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.api-status-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pill-mock { background: rgba(245,166,35,0.15); color: var(--gold); }
+.pill-live { background: rgba(0,200,150,0.15); color: var(--green); }
+.pill-error { background: rgba(255,71,87,0.15); color: var(--red); }
+
+.api-card-body { padding: 14px 18px; }
+.api-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.api-input:focus { border-color: rgba(30,111,255,0.5); }
+.api-input::placeholder { color: var(--muted); }
+.btn-test {
+  width: 100%;
+  padding: 9px;
+  background: var(--blue);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-test:hover { background: var(--blue2); }
+.btn-test:disabled { opacity: 0.5; cursor: not-allowed; }
+.api-result {
+  margin-top: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  color: var(--accent);
+  max-height: 180px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+  display: none;
+}
+.api-result.visible { display: block; }
+.api-result.error { color: var(--red); }
+.api-result::-webkit-scrollbar { width: 4px; }
+.api-result::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Modal ────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--navy2);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  width: 720px;
+  max-width: 95vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  transform: translateY(16px);
+  transition: transform 0.2s;
+}
+.modal-backdrop.open .modal { transform: translateY(0); }
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: sticky; top: 0;
+  background: var(--navy2);
+  z-index: 1;
+}
+.modal-name { font-size: 18px; font-weight: 700; color: var(--white); }
+.modal-iqama { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.modal-close {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.modal-close:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+.modal-body { padding: 20px 24px; display: grid; grid-template-columns: 1fr 240px; gap: 20px; }
+.modal-sections { display: flex; flex-direction: column; gap: 16px; }
+.modal-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.modal-section-title {
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.modal-row {
+  display: flex;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.modal-row:last-child { border-bottom: none; }
+.modal-row-label { font-size: 11px; color: var(--muted); width: 160px; flex-shrink: 0; padding-top: 1px; }
+.modal-row-value { font-size: 12px; color: var(--text); font-weight: 500; }
+
+/* ── Action panel ─────────────────────────────────────────── */
+.action-panel { display: flex; flex-direction: column; gap: 12px; }
+.watchlist-box {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.watchlist-box.clear { border-color: rgba(0,200,150,0.3); background: rgba(0,200,150,0.05); }
+.watchlist-box.flagged { border-color: rgba(255,71,87,0.3); background: rgba(255,71,87,0.05); }
+.wl-icon { font-size: 28px; margin-bottom: 6px; }
+.wl-label { font-size: 11px; color: var(--muted); }
+.wl-status { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.action-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.action-box-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+.notes-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  outline: none;
+  resize: none;
+  height: 64px;
+  transition: border-color 0.15s;
+}
+.notes-input:focus { border-color: rgba(30,111,255,0.5); }
+.notes-input::placeholder { color: var(--muted); }
+.action-btns { display: flex; flex-direction: column; gap: 6px; }
+.btn-approve, .btn-reject, .btn-flag {
+  width: 100%;
+  padding: 9px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-approve { background: rgba(0,200,150,0.15); color: var(--green); }
+.btn-approve:hover { background: var(--green); color: #0A1628; }
+.btn-reject  { background: rgba(255,71,87,0.15); color: var(--red); }
+.btn-reject:hover  { background: var(--red); color: white; }
+.btn-flag    { background: rgba(255,140,66,0.15); color: var(--orange); }
+.btn-flag:hover    { background: var(--orange); color: white; }
+
+.audit-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.audit-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.audit-entry:last-child { border-bottom: none; padding-bottom: 0; }
+.audit-entry:first-child { padding-top: 0; }
+.audit-action { font-size: 12px; font-weight: 600; color: var(--text); text-transform: capitalize; }
+.audit-note { font-size: 11px; color: var(--muted); }
+.audit-time { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--navy3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 200;
+  max-width: 320px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-color: rgba(0,200,150,0.4); }
+.toast.error   { border-color: rgba(255,71,87,0.4); }
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* ── Fade in ──────────────────────────────────────────────── */
+.fade-in { animation: fadeIn 0.4s ease both; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">IOTA Technologies</div>
+    <div class="product">KYC Portal</div>
+    <div class="sub">Agent Dashboard v1.0</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Main</div>
+    <div class="nav-item active" onclick="showView('dashboard')">
+      <span class="icon">⬛</span> Dashboard
+      <span class="nav-badge" id="pending-badge">0</span>
+    </div>
+    <div class="nav-item" onclick="showView('api-tester')">
+      <span class="icon">🔬</span> API Tester
+    </div>
+    <div class="nav-label">System</div>
+    <div class="nav-item">
+      <span class="icon">⚙</span> Settings
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="agent-info">
+      <div class="agent-avatar">AS</div>
+      <div>
+        <div class="agent-name">Agent — Dev</div>
+        <div class="agent-role">Reviewer</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">KYC Dashboard</div>
+    <div class="status-dot"></div>
+    <div class="topbar-time" id="live-time"></div>
+    <div style="font-size:11px;color:var(--muted)">Backend: <span style="color:var(--green)" id="backend-status">Checking...</span></div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div class="content fade-in" id="view-dashboard">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-label">Total Submitted</div>
+        <div class="kpi-value" id="kpi-total">0</div>
+        <div class="kpi-sub">All time submissions</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-icon">⏳</div>
+        <div class="kpi-label">Pending Review</div>
+        <div class="kpi-value" id="kpi-pending">0</div>
+        <div class="kpi-sub">Awaiting action</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-icon">✓</div>
+        <div class="kpi-label">Approved</div>
+        <div class="kpi-value" id="kpi-approved">0</div>
+        <div class="kpi-sub">Completed KYCs</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-icon">⚠</div>
+        <div class="kpi-label">Flagged (PEP/WL)</div>
+        <div class="kpi-value" id="kpi-flagged">0</div>
+        <div class="kpi-sub">Require attention</div>
+      </div>
+    </div>
+
+    <!-- Submissions -->
+    <div class="section-header">
+      <div class="section-title">KYC Submissions</div>
+      <button class="btn-review" onclick="injectDemoData()" style="font-size:12px;padding:7px 14px">
+        + Inject Demo Submissions
+      </button>
+    </div>
+
+    <div class="filter-tabs">
+      <div class="tab active" onclick="filterTable('')">All</div>
+      <div class="tab" onclick="filterTable('submitted')">Submitted</div>
+      <div class="tab" onclick="filterTable('under_review')">Under Review</div>
+      <div class="tab" onclick="filterTable('approved')">Approved</div>
+      <div class="tab" onclick="filterTable('rejected')">Rejected</div>
+      <div class="tab" onclick="filterTable('flagged')">Flagged</div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Nationality</th>
+            <th>Employment</th>
+            <th>Status</th>
+            <th>Watchlist</th>
+            <th>Submitted</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="submissions-table">
+          <tr><td colspan="7" class="td-empty">No submissions yet — click "Inject Demo Submissions" to test</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- API TESTER VIEW -->
+  <div class="content fade-in" id="view-api-tester" style="display:none">
+    <div class="section-header" style="margin-bottom:8px">
+      <div class="section-title">Government API Tester</div>
+      <span style="font-size:11px;color:var(--muted)">Mock mode — no credentials required. Swap .env keys to go live.</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px">
+      Test all 3 Saudi government APIs. Results show normalized response format — exact same schema the mobile app and backend use.
+    </p>
+
+    <div class="api-grid">
+
+      <!-- SPOST -->
+      <div class="api-card">
+        <div class="api-card-header">
+          <div>
+            <div class="api-name">SPOST — National Address</div>
+            <div class="api-platform">Saudi Post · SPOST API</div>
+          </div>
+          <div class="api-status-pill pill-mock" id="spost-status">MOCK</div>
+        </div>
+        <div class="api-card-body">
+          <input class="api-input" id="spost-iqama" type="text" placeholder="Iqama number (e.g. 1060197926)" value="1060197926" maxlength="10">
+          <button class="btn-test" onclick="testSPOST()">
+            <span>Test Address Lookup</span>
+          </button>
+          <div class="api-result" id="spost-result"></div>
+        </div>
+      </div>
+
+      <!-- TKML -->
+      <div class="api-card">
+        <div class="api-card-header">
+          <div>
+            <div class="api-name">TKML — Establishment</div>
+            <div class="api-platform">Ministry of HR · TKML</div>
+          </div>
+          <div class="api-status-pill pill-mock" id="tkml-status">MOCK</div>
+        </div>
+        <div class="api-card-body">
+          <input class="api-input" id="tkml-name" type="text" placeholder="Establishment name" value="شركة تالين الطبية">
+          <button class="btn-test" onclick="testTKML()">
+            <span>Test Establishment</span>
+          </button>
+          <div class="api-result" id="tkml-result"></div>
+        </div>
+      </div>
+
+      <!-- ELMNatheer -->
+      <div class="api-card">
+        <div class="api-card-header">
+          <div>
+            <div class="api-name">ELMNatheer — Watchlist</div>
+            <div class="api-platform">ELM · National Alert</div>
+          </div>
+          <div class="api-status-pill pill-mock" id="elm-status">MOCK</div>
+        </div>
+        <div class="api-card-body">
+          <input class="api-input" id="elm-id" type="text" placeholder="Person ID / Iqama" value="1060197926">
+          <input class="api-input" id="elm-dob" type="text" placeholder="Year of birth (e.g. 1985)" value="1975">
+          <button class="btn-test" onclick="testELM()">
+            <span>Run Watchlist Check</span>
+          </button>
+          <div class="api-result" id="elm-result"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Full flow test -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px">
+      <div class="section-title" style="margin-bottom:6px">Full KYC Flow Test</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Runs all 3 APIs in sequence for a single Iqama — simulates what happens when a customer submits their KYC.
+      </p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input class="api-input" style="width:220px;margin:0" id="flow-iqama" placeholder="Iqama number" value="TEST-PEP">
+        <button class="btn-test" style="width:auto;padding:9px 20px" onclick="runFullFlow()">
+          ▶ Run Full Flow
+        </button>
+        <span style="font-size:11px;color:var(--muted)">Tip: use <code style="background:rgba(255,255,255,0.07);padding:2px 5px;border-radius:3px;font-family:DM Mono,monospace">TEST-PEP</code> to trigger the PEP flag</span>
+      </div>
+      <div class="api-result" id="flow-result" style="margin-top:12px"></div>
+    </div>
+
+    <!-- API docs reference -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px">
+      <div class="section-title" style="margin-bottom:12px">API Endpoint Reference</div>
+      <table style="font-size:12px">
+        <thead>
+          <tr>
+            <th style="width:80px">Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-approved" style="font-size:9px">GET</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/gov/address/{iqama}</td>
+            <td style="color:var(--muted)">SPOST national address lookup</td>
+            <td><span class="badge badge-under_review">Mock</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-approved" style="font-size:9px">GET</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/gov/establishment/{name}</td>
+            <td style="color:var(--muted)">TKML establishment status</td>
+            <td><span class="badge badge-under_review">Mock</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-submitted" style="font-size:9px">POST</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/gov/watchlist</td>
+            <td style="color:var(--muted)">ELMNatheer watchlist check</td>
+            <td><span class="badge badge-under_review">Mock</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-submitted" style="font-size:9px">POST</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/kyc/session</td>
+            <td style="color:var(--muted)">Create KYC session</td>
+            <td><span class="badge badge-approved">Live</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-submitted" style="font-size:9px">PATCH</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/kyc/session/{id}/step/{n}</td>
+            <td style="color:var(--muted)">Save step data + advance</td>
+            <td><span class="badge badge-approved">Live</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-submitted" style="font-size:9px">POST</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/kyc/session/{id}/submit</td>
+            <td style="color:var(--muted)">Final submission + ELM check</td>
+            <td><span class="badge badge-approved">Live</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-approved" style="font-size:9px">GET</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/admin/submissions</td>
+            <td style="color:var(--muted)">List all submissions</td>
+            <td><span class="badge badge-approved">Live</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-submitted" style="font-size:9px">PATCH</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:11px">/admin/submissions/{id}</td>
+            <td style="color:var(--muted)">Approve / reject / flag</td>
+            <td><span class="badge badge-approved">Live</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-name" id="modal-name">—</div>
+        <div class="modal-iqama" id="modal-iqama">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-sections" id="modal-sections"></div>
+      <div class="action-panel" id="modal-action-panel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const API = 'http://localhost:8000'
+let allSubmissions = []
+let currentFilter = ''
+
+// ── Demo Data ────────────────────────────────────────────────────────────────
+const DEMO = [
+  {
+    id: 'demo-001', iqama: '1060197926', full_name: 'Ahmed Al-Rashidi',
+    nationality: 'Saudi', employment_status: 'private', employer_name: 'شركة تالين الطبية',
+    income_range: 'SAR 10,000–20,000', purpose_of_account: 'Salary deposit',
+    tax_resident_outside_ksa: false, is_pep: false,
+    elm_result: true, elm_result_code: 'YWCH-000',
+    building_number: '8470', street: 'Ibrahim Al Baqai', district: 'Al Shifa', city: 'Riyadh', postal_code: '12345',
+    expected_monthly_deposit_amount: 'SAR 15,000', expected_monthly_withdrawal_amount: 'SAR 8,000',
+    mobile_number: '+966501234567',
+    status: 'submitted', submitted_at: new Date(Date.now() - 3600000).toISOString(),
+    audit: []
+  },
+  {
+    id: 'demo-002', iqama: '2090445821', full_name: 'Sara Al-Ghamdi',
+    nationality: 'Saudi', employment_status: 'government', government_sector: 'Ministry of Health',
+    profession: 'Doctor', income_range: 'SAR 20,000–35,000', purpose_of_account: 'General banking',
+    tax_resident_outside_ksa: true, us_person: false, is_pep: false,
+    elm_result: true, elm_result_code: 'YWCH-000',
+    building_number: '1220', street: 'King Fahd Road', district: 'Al Olaya', city: 'Riyadh', postal_code: '11564',
+    expected_monthly_deposit_amount: 'SAR 22,000', expected_monthly_withdrawal_amount: 'SAR 12,000',
+    mobile_number: '+966509876543',
+    status: 'under_review', submitted_at: new Date(Date.now() - 86400000).toISOString(),
+    audit: [{ action: 'reviewed', notes: 'Pending FATCA verification', created_at: new Date(Date.now() - 3600000).toISOString() }]
+  },
+  {
+    id: 'demo-003', iqama: 'TEST-PEP', full_name: 'Mohammed Al-Otaibi',
+    nationality: 'Saudi', employment_status: 'self_employed', profession: 'Consultant',
+    income_range: 'SAR 50,000+', purpose_of_account: 'Business transactions',
+    tax_resident_outside_ksa: true, us_person: true, ssn_itin_atin: '123456789',
+    is_pep: true, pep_relationship: 'close_associate', pep_declaration_note: 'Business partner of former official',
+    elm_result: false, elm_result_code: 'YWCH-001',
+    building_number: '4521', street: 'Prince Sultan Road', district: 'Al Hamra', city: 'Jeddah', postal_code: '21462',
+    expected_monthly_deposit_amount: 'SAR 80,000', expected_monthly_withdrawal_amount: 'SAR 60,000',
+    mobile_number: '+966554321098',
+    status: 'flagged', submitted_at: new Date(Date.now() - 172800000).toISOString(),
+    audit: [
+      { action: 'reviewed', notes: 'ELM flagged — PEP check required', created_at: new Date(Date.now() - 7200000).toISOString() },
+      { action: 'flagged', notes: 'Escalated to compliance team', created_at: new Date(Date.now() - 3600000).toISOString() }
+    ]
+  },
+  {
+    id: 'demo-004', iqama: '1098234567', full_name: 'Fatima Al-Zahrani',
+    nationality: 'Saudi', employment_status: 'housewife',
+    income_range: 'SAR 0–5,000', purpose_of_account: 'Personal savings',
+    tax_resident_outside_ksa: false, is_pep: false,
+    elm_result: true, elm_result_code: 'YWCH-000',
+    building_number: '3301', street: 'Al Madinah Road', district: 'Al Rawdah', city: 'Jeddah', postal_code: '21589',
+    expected_monthly_deposit_amount: 'SAR 3,000', expected_monthly_withdrawal_amount: 'SAR 2,000',
+    mobile_number: '+966561234567',
+    status: 'approved', submitted_at: new Date(Date.now() - 259200000).toISOString(),
+    audit: [{ action: 'approved', notes: 'All checks passed', created_at: new Date(Date.now() - 86400000).toISOString() }]
+  },
+  {
+    id: 'demo-005', iqama: '2034521890', full_name: 'Khalid Al-Harbi',
+    nationality: 'Saudi', employment_status: 'private', employer_name: 'Tech Corp Ltd',
+    profession: 'Software Engineer', income_range: 'SAR 15,000–25,000',
+    purpose_of_account: 'Salary + investments',
+    tax_resident_outside_ksa: false, is_pep: false,
+    elm_result: true, elm_result_code: 'YWCH-000',
+    building_number: '7723', street: 'Tahlia Street', district: 'Al Sulimaniyah', city: 'Riyadh', postal_code: '12244',
+    expected_monthly_deposit_amount: 'SAR 18,000', expected_monthly_withdrawal_amount: 'SAR 9,000',
+    mobile_number: '+966503456789',
+    status: 'rejected', submitted_at: new Date(Date.now() - 345600000).toISOString(),
+    audit: [{ action: 'rejected', notes: 'Document mismatch — re-submit required', created_at: new Date(Date.now() - 172800000).toISOString() }]
+  },
+]
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateClock()
+  setInterval(updateClock, 1000)
+  checkBackend()
+  setInterval(checkBackend, 30000)
+})
+
+function updateClock() {
+  const now = new Date()
+  document.getElementById('live-time').textContent =
+    now.toLocaleTimeString('en-SA', { hour12: false }) + ' AST'
+}
+
+async function checkBackend() {
+  try {
+    const res = await fetch(`${API}/ping`, { signal: AbortSignal.timeout(3000) })
+    if (res.ok) {
+      document.getElementById('backend-status').textContent = 'Connected ✓'
+      document.getElementById('backend-status').style.color = 'var(--green)'
+    } else throw new Error()
+  } catch {
+    document.getElementById('backend-status').textContent = 'Offline (mock mode)'
+    document.getElementById('backend-status').style.color = 'var(--gold)'
+  }
+}
+
+// ── Views ────────────────────────────────────────────────────────────────────
+function showView(view) {
+  document.getElementById('view-dashboard').style.display = view === 'dashboard' ? '' : 'none'
+  document.getElementById('view-api-tester').style.display = view === 'api-tester' ? '' : 'none'
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0 && view === 'dashboard') || (i === 1 && view === 'api-tester'))
+  })
+  document.getElementById('topbar-title').textContent =
+    view === 'dashboard' ? 'KYC Dashboard' : 'Government API Tester'
+}
+
+// ── Demo Data ────────────────────────────────────────────────────────────────
+function injectDemoData() {
+  allSubmissions = JSON.parse(JSON.stringify(DEMO))
+  renderTable()
+  updateKPIs()
+  showToast('✓ 5 demo submissions injected', 'success')
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+function filterTable(status) {
+  currentFilter = status
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  event.target.classList.add('active')
+  renderTable()
+}
+
+function renderTable() {
+  const filtered = currentFilter
+    ? allSubmissions.filter(s => s.status === currentFilter)
+    : allSubmissions
+
+  const tbody = document.getElementById('submissions-table')
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="td-empty">No submissions${currentFilter ? ` with status "${currentFilter}"` : ''}</td></tr>`
+    return
+  }
+
+  tbody.innerHTML = filtered.map(s => `
+    <tr>
+      <td class="td-name">
+        ${s.full_name}
+        <small>${s.iqama}</small>
+      </td>
+      <td style="color:var(--muted)">${s.nationality || '—'}</td>
+      <td style="color:var(--muted);font-size:12px">${(s.employment_status || '—').replace('_', ' ')}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td>${watchlistBadge(s.elm_result)}</td>
+      <td style="color:var(--muted);font-size:11px;font-family:'DM Mono',monospace">
+        ${s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('en-SA') : '—'}
+      </td>
+      <td><button class="btn-review" onclick="openModal('${s.id}')">Review →</button></td>
+    </tr>
+  `).join('')
+}
+
+function statusBadge(status) {
+  const map = {
+    submitted: 'Submitted',
+    under_review: 'Under Review',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    flagged: 'Flagged',
+  }
+  return `<span class="badge badge-${status}">${map[status] || status}</span>`
+}
+
+function watchlistBadge(result) {
+  if (result === undefined || result === null) return `<span class="badge badge-pending">—</span>`
+  return result
+    ? `<span class="badge badge-clear">✓ Clear</span>`
+    : `<span class="badge badge-flaggedwl">⚠ Flagged</span>`
+}
+
+function updateKPIs() {
+  document.getElementById('kpi-total').textContent = allSubmissions.length
+  document.getElementById('kpi-pending').textContent = allSubmissions.filter(s => s.status === 'submitted').length
+  document.getElementById('kpi-approved').textContent = allSubmissions.filter(s => s.status === 'approved').length
+  document.getElementById('kpi-flagged').textContent = allSubmissions.filter(s => s.status === 'flagged').length
+  document.getElementById('pending-badge').textContent = allSubmissions.filter(s => s.status === 'submitted').length
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  const s = allSubmissions.find(x => x.id === id)
+  if (!s) return
+
+  document.getElementById('modal-name').textContent = s.full_name
+  document.getElementById('modal-iqama').textContent = `Iqama: ${s.iqama} · Status: ${s.status.replace('_', ' ')}`
+
+  // Build sections
+  const sections = [
+    { title: 'Personal Information', rows: [
+      ['Full Name', s.full_name],
+      ['Nationality', s.nationality],
+      ['Mobile Number', s.mobile_number],
+    ]},
+    { title: 'National Address', rows: [
+      ['Building No', s.building_number],
+      ['Street', s.street],
+      ['District', s.district],
+      ['City', s.city],
+      ['Postal Code', s.postal_code],
+    ]},
+    { title: 'Employment', rows: [
+      ['Status', (s.employment_status || '').replace('_', ' ')],
+      ['Employer', s.employer_name],
+      ['Sector', s.government_sector],
+      ['Profession', s.profession],
+      ['Joining Date', s.joining_date],
+    ].filter(r => r[1])},
+    { title: 'Financial Information', rows: [
+      ['Income Range', s.income_range],
+      ['Purpose of Account', s.purpose_of_account],
+      ['Monthly Deposits', s.expected_monthly_deposit_amount],
+      ['Monthly Withdrawals', s.expected_monthly_withdrawal_amount],
+    ]},
+    { title: 'FATCA / CRS', rows: [
+      ['Tax Resident Outside KSA', s.tax_resident_outside_ksa ? 'Yes' : 'No'],
+      ['US Person', s.us_person !== undefined ? (s.us_person ? 'Yes' : 'No') : null],
+      ['SSN / ITIN / ATIN', s.ssn_itin_atin],
+    ].filter(r => r[1] !== null && r[1] !== undefined)},
+  ]
+
+  if (s.is_pep) {
+    sections.push({ title: '⚠ PEP Declaration', rows: [
+      ['PEP Flagged', 'Yes'],
+      ['Relationship', s.pep_relationship],
+      ['Declaration Note', s.pep_declaration_note],
+    ].filter(r => r[1])})
+  }
+
+  document.getElementById('modal-sections').innerHTML = sections.map(sec => `
+    <div class="modal-section">
+      <div class="modal-section-title">${sec.title}</div>
+      ${sec.rows.map(([label, value]) => `
+        <div class="modal-row">
+          <span class="modal-row-label">${label}</span>
+          <span class="modal-row-value">${value}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('')
+
+  // Action panel
+  const canAct = ['submitted', 'under_review'].includes(s.status)
+  document.getElementById('modal-action-panel').innerHTML = `
+    <div class="watchlist-box ${s.elm_result === false ? 'flagged' : 'clear'}">
+      <div class="wl-icon">${s.elm_result === false ? '⚠' : '✓'}</div>
+      <div class="wl-label">ELMNatheer Watchlist</div>
+      <div class="wl-status" style="color:${s.elm_result === false ? 'var(--red)' : 'var(--green)'}">
+        ${s.elm_result === false ? `Flagged — ${s.elm_result_code}` : 'Clear'}
+      </div>
+    </div>
+
+    ${canAct ? `
+      <div class="action-box">
+        <div class="action-box-title">Take Action</div>
+        <textarea class="notes-input" id="action-notes" placeholder="Add notes (optional)..."></textarea>
+        <div class="action-btns">
+          <button class="btn-approve" onclick="takeAction('${id}', 'approved')">✓ Approve</button>
+          <button class="btn-reject"  onclick="takeAction('${id}', 'rejected')">✗ Reject</button>
+          <button class="btn-flag"    onclick="takeAction('${id}', 'flagged')">⚠ Flag for Review</button>
+        </div>
+      </div>
+    ` : `
+      <div class="action-box" style="text-align:center;padding:20px">
+        <div style="font-size:24px;margin-bottom:6px">${s.status === 'approved' ? '✓' : s.status === 'rejected' ? '✗' : '⚠'}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);text-transform:capitalize">${s.status.replace('_',' ')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">No further action needed</div>
+      </div>
+    `}
+
+    <div class="audit-box">
+      <div class="action-box-title">Audit Log</div>
+      ${!s.audit?.length
+        ? `<div style="font-size:12px;color:var(--muted)">No actions yet</div>`
+        : s.audit.map(log => `
+          <div class="audit-entry">
+            <div class="audit-action">${log.action}</div>
+            ${log.notes ? `<div class="audit-note">${log.notes}</div>` : ''}
+            <div class="audit-time">${new Date(log.created_at).toLocaleString('en-SA')}</div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `
+
+  document.getElementById('modal-backdrop').classList.add('open')
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModalDirect()
+}
+function closeModalDirect() {
+  document.getElementById('modal-backdrop').classList.remove('open')
+}
+
+function takeAction(id, action) {
+  const s = allSubmissions.find(x => x.id === id)
+  if (!s) return
+  const notes = document.getElementById('action-notes')?.value || ''
+  s.status = action
+  if (!s.audit) s.audit = []
+  s.audit.push({ action, notes, created_at: new Date().toISOString() })
+  renderTable()
+  updateKPIs()
+  closeModalDirect()
+  showToast(`✓ Submission ${action}`, 'success')
+}
+
+// ── API Tester ─────────────────────────────────────────────────────────────────
+
+// MOCK responses matching your actual JSON files exactly
+const MOCK_SPOST = {
+  success: true, source: 'mock',
+  building_number: '8470',
+  street: 'Ibrahim Al Baqai',
+  district: 'Al Shifa Dist.',
+  city: 'Riyadh',
+  postal_code: '47919',
+  additional_number: '3337',
+  unit_number: '8',
+  region: 'Riyadh Region',
+  latitude: '28.37211195',
+  longitude: '36.48338480',
+}
+
+const MOCK_TKML = {
+  success: true, source: 'mock',
+  establishment_name: 'شركة تالين الطبية المحدودة',
+  establishment_status: 'قائمة',
+  establishment_status_en: 'Active',
+}
+
+function mockELM(personId) {
+  const flagged = personId.includes('PEP') || personId === 'TEST-PEP'
+  return {
+    person_id: personId,
+    result: !flagged,
+    result_code: flagged ? 'YWCH-001' : 'YWCH-000',
+    result_desc: flagged ? 'Inaccurate data entry identified' : 'Clear',
+    source: 'mock',
+  }
+}
+
+async function apiCall(url, options) {
+  try {
+    const res = await fetch(url, { ...options, signal: AbortSignal.timeout(5000) })
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+function showResult(elId, data, isError = false) {
+  const el = document.getElementById(elId)
+  el.textContent = JSON.stringify(data, null, 2)
+  el.classList.add('visible')
+  el.classList.toggle('error', isError)
+}
+
+async function testSPOST() {
+  const iqama = document.getElementById('spost-iqama').value.trim()
+  const btn = event.target.closest('button')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span>'
+
+  // Try live backend first, fall back to mock
+  const live = await apiCall(`${API}/gov/address/${iqama}`)
+  await new Promise(r => setTimeout(r, 400))
+  btn.disabled = false
+  btn.innerHTML = '<span>Test Address Lookup</span>'
+
+  const data = live || MOCK_SPOST
+  document.getElementById('spost-status').textContent = live ? 'LIVE' : 'MOCK'
+  document.getElementById('spost-status').className = 'api-status-pill ' + (live ? 'pill-live' : 'pill-mock')
+  showResult('spost-result', data)
+}
+
+async function testTKML() {
+  const name = document.getElementById('tkml-name').value.trim()
+  const btn = event.target.closest('button')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span>'
+
+  const live = await apiCall(`${API}/gov/establishment/${encodeURIComponent(name)}`)
+  await new Promise(r => setTimeout(r, 400))
+  btn.disabled = false
+  btn.innerHTML = '<span>Test Establishment</span>'
+
+  const data = live || MOCK_TKML
+  document.getElementById('tkml-status').textContent = live ? 'LIVE' : 'MOCK'
+  document.getElementById('tkml-status').className = 'api-status-pill ' + (live ? 'pill-live' : 'pill-mock')
+  showResult('tkml-result', data)
+}
+
+async function testELM() {
+  const personId = document.getElementById('elm-id').value.trim()
+  const dob = document.getElementById('elm-dob').value.trim()
+  const btn = event.target.closest('button')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span>'
+
+  const live = await apiCall(`${API}/gov/watchlist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ person_id: personId, id_type: 'NIN', dob })
+  })
+  await new Promise(r => setTimeout(r, 400))
+  btn.disabled = false
+  btn.innerHTML = '<span>Run Watchlist Check</span>'
+
+  const data = live || mockELM(personId)
+  document.getElementById('elm-status').textContent = live ? 'LIVE' : 'MOCK'
+  document.getElementById('elm-status').className = 'api-status-pill ' + (live ? 'pill-live' : 'pill-mock')
+  showResult('elm-result', data, data.result === false)
+}
+
+async function runFullFlow() {
+  const iqama = document.getElementById('flow-iqama').value.trim()
+  const btn = event.target.closest('button')
+  const resultEl = document.getElementById('flow-result')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Running...'
+  resultEl.style.display = 'block'
+  resultEl.className = 'api-result visible'
+  resultEl.textContent = '// Running full KYC flow...\n'
+
+  const steps = [
+    { label: 'STEP 1 — SPOST: Fetching national address', fn: async () => {
+      const live = await apiCall(`${API}/gov/address/${iqama}`)
+      return live || MOCK_SPOST
+    }},
+    { label: 'STEP 2 — TKML: Validating establishment (if employed)', fn: async () => {
+      const live = await apiCall(`${API}/gov/establishment/${encodeURIComponent('شركة تالين الطبية')}`)
+      return live || MOCK_TKML
+    }},
+    { label: 'STEP 3 — ELMNatheer: Watchlist check', fn: async () => {
+      const live = await apiCall(`${API}/gov/watchlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person_id: iqama, id_type: 'NIN', dob: '1985' })
+      })
+      return live || mockELM(iqama)
+    }},
+  ]
+
+  let output = ''
+  for (const step of steps) {
+    await new Promise(r => setTimeout(r, 600))
+    const result = await step.fn()
+    output += `// ${step.label}\n${JSON.stringify(result, null, 2)}\n\n`
+    resultEl.textContent = output
+  }
+
+  const isPEP = iqama.includes('PEP')
+  output += `// RESULT: KYC flow complete\n// Watchlist: ${isPEP ? '⚠ FLAGGED — PEP flow triggered' : '✓ CLEAR — proceed to submission'}`
+  resultEl.textContent = output
+  if (isPEP) resultEl.classList.add('error')
+
+  btn.disabled = false
+  btn.innerHTML = '▶ Run Full Flow'
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.className = `toast show ${type}`
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000)
+}
+</script>
+</body>
+</html>

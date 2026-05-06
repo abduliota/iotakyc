@@ -1,0 +1,10 @@
+// @iotakyc/core — main export
+export * from './types'
+export * from './api'
+export * from './schemas/step1'
+export * from './schemas/step2'
+export * from './schemas/step3'
+export * from './schemas/step4'
+export * from './schemas/step5'
+export * from './schemas/step6'
+export * from './schemas/step7'
