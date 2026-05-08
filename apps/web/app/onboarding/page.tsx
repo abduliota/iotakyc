@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
 import './wizard.css'
+import { API_BASE_URL } from '../../lib/api'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Screen = 'intro' | 'wizard' | 'success'
@@ -228,10 +229,8 @@ export default function OnboardingPage() {
     if (step === STEPS.length - 1) {
       setSubmitting(true)
       try {
-        const API = 'http://localhost:8000'
-
         // 1. Create session
-        const sessionRes = await fetch(`${API}/kyc/session`, {
+        const sessionRes = await fetch(`${API_BASE_URL}/kyc/session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ iqama: data.iqama, user_id: `user-${data.iqama}` }),
@@ -240,7 +239,7 @@ export default function OnboardingPage() {
         const sid = session.id
 
         // 2. Save step 1 — Personal Info
-        await fetch(`${API}/kyc/session/${sid}/step/1`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/1`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -256,7 +255,7 @@ export default function OnboardingPage() {
         })
 
         // 3. Save step 2 — Employment
-        await fetch(`${API}/kyc/session/${sid}/step/2`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/2`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -270,7 +269,7 @@ export default function OnboardingPage() {
         })
 
         // 4. Save step 3 — Financial
-        await fetch(`${API}/kyc/session/${sid}/step/3`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/3`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -289,7 +288,7 @@ export default function OnboardingPage() {
         })
 
         // 5. Save step 4 — Contact & Additional
-        await fetch(`${API}/kyc/session/${sid}/step/4`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/4`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -309,7 +308,7 @@ export default function OnboardingPage() {
         })
 
         // 6. Save step 5 — FATCA / CRS
-        await fetch(`${API}/kyc/session/${sid}/step/5`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/5`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -324,7 +323,7 @@ export default function OnboardingPage() {
         })
 
         // 7. Save step 6 — National Address
-        await fetch(`${API}/kyc/session/${sid}/step/6`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/6`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -340,7 +339,7 @@ export default function OnboardingPage() {
         })
 
         // 8. Final submit — triggers ELMNatheer watchlist check server-side
-        await fetch(`${API}/kyc/session/${sid}/submit`, {
+        await fetch(`${API_BASE_URL}/kyc/session/${sid}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../../lib/api'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Status = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'flagged'
@@ -364,7 +365,7 @@ function Modal({ sub, onClose, onAction }: {
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────────
-const API = 'http://localhost:8000'
+const API = API_BASE_URL
 
 export default function DashboardPage() {
   const [subs, setSubs] = useState<Submission[]>([])
@@ -461,7 +462,7 @@ export default function DashboardPage() {
     }))
 
     // Also persist to backend
-    fetch(`http://localhost:8000/admin/submissions/${id}`, {
+    fetch(`${API}/admin/submissions/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, notes }),

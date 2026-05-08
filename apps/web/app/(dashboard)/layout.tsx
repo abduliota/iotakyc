@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { API_BASE_URL } from '../../lib/api'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -16,7 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const check = async () => {
       try {
-        const r = await fetch('http://localhost:8000/ping', { signal: AbortSignal.timeout(3000) })
+        const r = await fetch(`${API_BASE_URL}/ping`, { signal: AbortSignal.timeout(3000) })
         setBackend(r.ok ? 'live' : 'offline')
       } catch { setBackend('offline') }
     }

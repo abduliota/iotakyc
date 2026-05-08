@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
+import { API_BASE_URL } from '../../../lib/api'
 
-const API = 'http://localhost:8000'
+const API = API_BASE_URL
 
 const MOCK_SPOST = {
   success: true, source: 'mock',
