@@ -1,7 +1,6 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
 import './wizard.css'
-import { API_BASE_URL } from '../../lib/api'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Screen = 'intro' | 'wizard' | 'success'
@@ -177,7 +176,16 @@ export default function OnboardingPage() {
     const e: Partial<Record<keyof WizData, string>> = {}
 
     if (step === 0) {
-      if (!data.iqama || !/^\d{10}$/.test(data.iqama)) e.iqama = 'Iqama must be exactly 10 digits'
+      // Saudi ID standard format validation
+      // NIN (Saudi citizens): starts with 1
+      // Iqama (Residents):    starts with 2
+      if (!data.iqama) {
+        e.iqama = 'ID number is required'
+      } else if (!/^\d{10}$/.test(data.iqama)) {
+        e.iqama = 'ID must be exactly 10 digits — numbers only'
+      } else if (!['1','2'].includes(data.iqama[0])) {
+        e.iqama = `ID must start with 1 (Saudi NIN) or 2 (Iqama/Resident) — got "${data.iqama[0]}"`
+      }
       if (!data.fullName) e.fullName = 'Full name is required'
       if (!data.dob) e.dob = 'Date of birth is required'
       if (!data.nationality) e.nationality = 'Nationality is required'
@@ -229,8 +237,10 @@ export default function OnboardingPage() {
     if (step === STEPS.length - 1) {
       setSubmitting(true)
       try {
+        const API = 'http://localhost:8000'
+
         // 1. Create session
-        const sessionRes = await fetch(`${API_BASE_URL}/kyc/session`, {
+        const sessionRes = await fetch(`${API}/kyc/session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ iqama: data.iqama, user_id: `user-${data.iqama}` }),
@@ -239,7 +249,7 @@ export default function OnboardingPage() {
         const sid = session.id
 
         // 2. Save step 1 — Personal Info
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/1`, {
+        await fetch(`${API}/kyc/session/${sid}/step/1`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -255,7 +265,7 @@ export default function OnboardingPage() {
         })
 
         // 3. Save step 2 — Employment
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/2`, {
+        await fetch(`${API}/kyc/session/${sid}/step/2`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -269,7 +279,7 @@ export default function OnboardingPage() {
         })
 
         // 4. Save step 3 — Financial
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/3`, {
+        await fetch(`${API}/kyc/session/${sid}/step/3`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -288,7 +298,7 @@ export default function OnboardingPage() {
         })
 
         // 5. Save step 4 — Contact & Additional
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/4`, {
+        await fetch(`${API}/kyc/session/${sid}/step/4`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -308,7 +318,7 @@ export default function OnboardingPage() {
         })
 
         // 6. Save step 5 — FATCA / CRS
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/5`, {
+        await fetch(`${API}/kyc/session/${sid}/step/5`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -323,7 +333,7 @@ export default function OnboardingPage() {
         })
 
         // 7. Save step 6 — National Address
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/step/6`, {
+        await fetch(`${API}/kyc/session/${sid}/step/6`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -339,7 +349,7 @@ export default function OnboardingPage() {
         })
 
         // 8. Final submit — triggers ELMNatheer watchlist check server-side
-        await fetch(`${API_BASE_URL}/kyc/session/${sid}/submit`, {
+        await fetch(`${API}/kyc/session/${sid}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),
@@ -513,8 +523,21 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
         <h2 className="wiz-title">Personal Information</h2>
         <p className="wiz-sub">Enter your Iqama number and verify your identity details. Fields will be auto-filled where possible.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, flex: 1 }}>
-          <WField label="Iqama / National ID Number" error={errors.iqama} note="Your 10-digit Saudi National ID or Iqama number">
-            <input type="text" inputMode="numeric" maxLength={10} placeholder="10-digit Iqama number"
+          <WField
+            label="Iqama / National ID Number"
+            error={errors.iqama}
+            note={
+              data.iqama.startsWith('1') && data.iqama.length === 10
+                ? '🟢 Saudi National ID (NIN) — starts with 1'
+                : data.iqama.startsWith('2') && data.iqama.length === 10
+                ? '🟡 Iqama / Resident ID — starts with 2'
+                : data.iqama.length > 0 && !['1','2'].includes(data.iqama[0])
+                ? '🔴 Invalid — must start with 1 (NIN) or 2 (Iqama)'
+                : 'Saudi NIN starts with 1 · Iqama starts with 2 · 10 digits'
+            }
+          >
+            <input type="text" inputMode="numeric" maxLength={10}
+              placeholder="10-digit ID number (1xxxxxxxxx or 2xxxxxxxxx)"
               value={data.iqama} onChange={e => set('iqama')(e.target.value)} />
           </WField>
           <div className="wf-row">
