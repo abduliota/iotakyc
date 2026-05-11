@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import './wizard.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -147,6 +147,192 @@ function BtnRow({ onBack, onNext, backLabel, nextLabel, nextLoading, isFirst, is
   )
 }
 
+
+// ── Hijri ↔ Gregorian conversion (no external lib — pure math) ───────────────
+// Algorithm: Kuwaiti algorithm (used by Saudi gov systems)
+function gregorianToHijri(gDate: string): string {
+  if (!gDate) return ''
+  const [gy, gm, gd] = gDate.split('-').map(Number)
+  const jd = Math.floor((1461 * (gy + 4800 + Math.floor((gm - 14) / 12))) / 4)
+    + Math.floor((367 * (gm - 2 - 12 * Math.floor((gm - 14) / 12))) / 12)
+    - Math.floor((3 * Math.floor((gy + 4900 + Math.floor((gm - 14) / 12)) / 100)) / 4)
+    + gd - 32075
+  let l = jd - 1948440 + 10632
+  const n = Math.floor((l - 1) / 10631)
+  l = l - 10631 * n + 354
+  const j = (Math.floor((10985 - l) / 5316)) * (Math.floor((50 * l) / 17719))
+    + (Math.floor(l / 5670)) * (Math.floor((43 * l) / 15238))
+  l = l - (Math.floor((30 - j) / 15)) * (Math.floor((17719 * j) / 50))
+    - (Math.floor(j / 16)) * (Math.floor((15238 * j) / 43)) + 29
+  const hm = Math.floor((24 * l) / 709)
+  const hd = l - Math.floor((709 * hm) / 24)
+  const hy = 30 * n + j - 30
+  return `${hy}/${String(hm).padStart(2,'0')}/${String(hd).padStart(2,'0')}`
+}
+
+function hijriToGregorian(hDate: string): string {
+  // hDate format: YYYY/MM/DD (Hijri)
+  const parts = hDate.replace(/-/g, '/').split('/')
+  if (parts.length !== 3) return ''
+  const [hy, hm, hd] = parts.map(Number)
+  if (isNaN(hy) || isNaN(hm) || isNaN(hd)) return ''
+  if (hm < 1 || hm > 12 || hd < 1 || hd > 30) return ''
+  const jd = Math.floor((11 * hy + 3) / 30) + 354 * hy + 30 * hm
+    - Math.floor((hm - 1) / 2) + hd + 1948440 - 385
+  const l = jd + 68569
+  const n = Math.floor((4 * l) / 146097)
+  const l2 = l - Math.floor((146097 * n + 3) / 4)
+  const i = Math.floor((4000 * (l2 + 1)) / 1461001)
+  const l3 = l2 - Math.floor((1461 * i) / 4) + 31
+  const j = Math.floor((80 * l3) / 2447)
+  const gd = l3 - Math.floor((2447 * j) / 80)
+  const l4 = Math.floor(j / 11)
+  const gm = j + 2 - 12 * l4
+  const gy = 100 * (n - 49) + i + l4
+  return `${gy}-${String(gm).padStart(2,'0')}-${String(gd).padStart(2,'0')}`
+}
+
+const HIJRI_MONTHS = [
+  'Muharram','Safar','Rabi al-Awwal','Rabi al-Thani',
+  'Jumada al-Awwal','Jumada al-Thani','Rajab','Shaaban',
+  'Ramadan','Shawwal','Dhul Qadah','Dhul Hijjah',
+]
+
+// ── DateOfBirthField — Gregorian input with Hijri toggle ─────────────────────
+function DateOfBirthField({ value, onChange, error }: {
+  value: string; onChange: (v: string) => void; error?: string
+}) {
+  const [useHijri, setUseHijri] = React.useState(false)
+  const [hijriRaw, setHijriRaw] = React.useState('')
+  const [hijriError, setHijriError] = React.useState('')
+
+  // Derive Hijri display from Gregorian value
+  const hijriDisplay = value ? gregorianToHijri(value) : ''
+
+  // When switching TO Hijri, pre-fill with current Hijri
+  const handleToggle = () => {
+    if (!useHijri) {
+      setHijriRaw(hijriDisplay)
+      setHijriError('')
+    }
+    setUseHijri(h => !h)
+  }
+
+  const handleHijriChange = (raw: string) => {
+    setHijriRaw(raw)
+    setHijriError('')
+    // Auto-convert when format looks complete: YYYY/MM/DD
+    const clean = raw.replace(/-/g, '/')
+    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(clean)) {
+      const greg = hijriToGregorian(clean)
+      if (greg) {
+        onChange(greg)
+        setHijriError('')
+      } else {
+        setHijriError('Invalid Hijri date — check day/month values')
+      }
+    }
+  }
+
+  // Validate DOB: must be in past, age 0–120
+  const validateGregorian = (v: string) => {
+    if (!v) return ''
+    const d = new Date(v)
+    const now = new Date()
+    if (d > now) return 'Date of birth cannot be in the future'
+    const age = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    if (age > 120) return 'Please enter a valid date of birth'
+    return ''
+  }
+
+  const gregError = value ? validateGregorian(value) : ''
+  const displayError = error || gregError || hijriError
+
+  return (
+    <div className={`wf${displayError ? ' has-error' : ''}`}>
+      {/* Label row with Hijri toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+          Date of Birth
+        </label>
+        <button
+          type="button"
+          onClick={handleToggle}
+          style={{
+            background: useHijri ? 'rgba(0,200,255,0.12)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${useHijri ? 'rgba(0,200,255,0.35)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 99, padding: '3px 10px', cursor: 'pointer',
+            fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+            color: useHijri ? 'var(--accent)' : 'var(--muted)',
+            transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 5,
+          }}
+        >
+          <span style={{ fontSize: 13 }}>🌙</span>
+          {useHijri ? 'Hijri' : 'Gregorian'}
+        </button>
+      </div>
+
+      {/* Gregorian input */}
+      {!useHijri && (
+        <input
+          type="date"
+          value={value}
+          max={new Date().toISOString().split('T')[0]}
+          min="1900-01-01"
+          onChange={e => onChange(e.target.value)}
+        />
+      )}
+
+      {/* Hijri input */}
+      {useHijri && (
+        <div>
+          <input
+            type="text"
+            placeholder="YYYY/MM/DD  e.g. 1410/05/15"
+            value={hijriRaw}
+            onChange={e => handleHijriChange(e.target.value)}
+            maxLength={10}
+            style={{ fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}
+          />
+          {value && hijriDisplay && !hijriError && (
+            <div style={{
+              marginTop: 6, padding: '6px 10px', borderRadius: 8,
+              background: 'rgba(0,200,255,0.06)', border: '1px solid rgba(0,200,255,0.15)',
+              fontSize: 11, color: 'var(--accent)', display: 'flex', gap: 10,
+            }}>
+              <span>🌙 {hijriDisplay}</span>
+              <span style={{ color: 'var(--muted)' }}>→</span>
+              <span style={{ color: 'var(--text2)' }}>
+                {new Date(value + 'T00:00:00').toLocaleDateString('en-SA', { day:'numeric', month:'long', year:'numeric' })}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hijri month helper — shows when gregorian is set */}
+      {!useHijri && value && hijriDisplay && (
+        <div style={{
+          marginTop: 6, padding: '5px 10px', borderRadius: 8,
+          background: 'rgba(0,200,255,0.04)', border: '1px solid rgba(0,200,255,0.1)',
+          fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 6, alignItems: 'center',
+        }}>
+          <span>🌙</span>
+          <span>
+            {(() => {
+              const parts = hijriDisplay.split('/')
+              const hm = parseInt(parts[1]) - 1
+              return `${parts[2]} ${HIJRI_MONTHS[hm] ?? ''} ${parts[0]} AH`
+            })()}
+          </span>
+        </div>
+      )}
+
+      {displayError && <span className="err">{displayError}</span>}
+    </div>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
   const [screen, setScreen] = useState<Screen>('intro')
@@ -187,7 +373,19 @@ export default function OnboardingPage() {
         e.iqama = `ID must start with 1 (Saudi NIN) or 2 (Iqama/Resident) — got "${data.iqama[0]}"`
       }
       if (!data.fullName) e.fullName = 'Full name is required'
-      if (!data.dob) e.dob = 'Date of birth is required'
+      // DOB validation — must be provided, in the past, age < 120
+      if (!data.dob) {
+        e.dob = 'Date of birth is required'
+      } else {
+        const dob = new Date(data.dob)
+        const now = new Date()
+        if (dob > now) {
+          e.dob = 'Date of birth cannot be in the future'
+        } else {
+          const age = (now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+          if (age > 120) e.dob = 'Please enter a valid date of birth'
+        }
+      }
       if (!data.nationality) e.nationality = 'Nationality is required'
       if (!data.cob) e.cob = 'Country of birth is required'
       if (!data.cityob) e.cityob = 'City of birth is required'
@@ -544,9 +742,11 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
             <WField label="Full Name (as on ID)" error={errors.fullName}>
               <input type="text" placeholder="Full legal name" value={data.fullName} onChange={e => set('fullName')(e.target.value)} />
             </WField>
-            <WField label="Date of Birth" error={errors.dob}>
-              <input type="date" value={data.dob} onChange={e => set('dob')(e.target.value)} />
-            </WField>
+            <DateOfBirthField
+              value={data.dob}
+              onChange={v => set('dob')(v)}
+              error={errors.dob}
+            />
           </div>
           <div className="wf-row">
             <WField label="Nationality" error={errors.nationality}>
@@ -1042,4 +1242,4 @@ function Step6({ data, set, errors, onBack, onNext, addressState, onFetch, submi
       </div>
     </>
   )
-} 
+}
