@@ -199,9 +199,10 @@ const HIJRI_MONTHS = [
 ]
 
 // ── DateOfBirthField — Gregorian input with Hijri calendar picker ────────────
-function HijriCalendar({ selected, onSelect }: {
+function HijriCalendar({ selected, onSelect, maxToday = true }: {
   selected: { hy: number; hm: number; hd: number } | null
   onSelect: (hy: number, hm: number, hd: number) => void
+  maxToday?: boolean
 }) {
   const currentHijri = gregorianToHijri(new Date().toISOString().split('T')[0])
   const [cy, cm] = currentHijri.split('/').map(Number)
@@ -447,6 +448,7 @@ function DateOfBirthField({ value, onChange, error, label = 'Date of Birth', max
             <HijriCalendar
               selected={selectedHijri}
               onSelect={handleHijriSelect}
+              maxToday={maxToday}
             />
           )}
 
