@@ -1180,39 +1180,47 @@ function Step3({ data, set, errors, onBack, onNext }: any) {
 function SaudiMobileField({ value, onChange, error }: {
   value: string; onChange: (v: string) => void; error?: string
 }) {
-  // Strip +966 / 966 prefix from stored value to show just the local part
+  // Convert stored value (+9665XXXXXXXX) → local display (05XXXXXXXX)
   const toLocal = (v: string) => {
-    const stripped = v.replace(/\s/g, '')
-    if (stripped.startsWith('+966')) return stripped.slice(4)
-    if (stripped.startsWith('966'))  return stripped.slice(3)
-    return stripped
+    const s = v.replace(/\s/g, '')
+    if (s.startsWith('+9665')) return '0' + s.slice(4)   // +9665X → 05X
+    if (s.startsWith('9665'))  return '0' + s.slice(3)   // 9665X  → 05X
+    if (s.startsWith('+966'))  return s.slice(4)          // +966 with no 5 yet
+    if (s.startsWith('966'))   return s.slice(3)
+    return s
   }
 
   const [local, setLocal] = React.useState(() => toLocal(value))
 
-  // Sync if parent resets the value
   React.useEffect(() => { setLocal(toLocal(value)) }, [value])
 
   const handleChange = (raw: string) => {
-    // Strip everything except digits
     let digits = raw.replace(/[^\d]/g, '')
-    // If user pastes the full number starting with 966 or 00966, strip prefix
-    if (digits.startsWith('00966')) digits = digits.slice(5)
+    // Handle paste of full international number
+    if (digits.startsWith('00966')) digits = '0' + digits.slice(5)
+    else if (digits.startsWith('9665')) digits = '0' + digits.slice(3)
     else if (digits.startsWith('966')) digits = digits.slice(3)
-    // Max 10 digits (05XXXXXXXX)
+    // Cap at 10 digits (05XXXXXXXX)
     digits = digits.slice(0, 10)
     setLocal(digits)
-    // Store as full international format
-    onChange(digits ? '+966' + digits.replace(/^0/, '') : '')
+    // Store as +966 international — keep leading 0 stripped for intl format
+    if (digits.startsWith('05') && digits.length > 1) {
+      onChange('+966' + digits.slice(1))  // 05XXXXXXXX → +9665XXXXXXXX
+    } else if (digits === '0') {
+      onChange('')  // just a leading zero — not complete yet, store empty
+    } else if (digits) {
+      onChange('+966' + digits)
+    } else {
+      onChange('')
+    }
   }
 
-  // Live feedback
-  const isValid = /^05\d{8}$/.test(local) || local === ''
   const isComplete = /^05\d{8}$/.test(local)
+  const isStartWrong = local.length > 1 && !local.startsWith('05')
 
   const note = isComplete
     ? `✓ +966 ${local.slice(1,3)} ${local.slice(3,6)} ${local.slice(6,9)} ${local.slice(9)}`
-    : local.length > 0 && !local.startsWith('05')
+    : isStartWrong
     ? '🔴 Saudi mobiles start with 05'
     : local.length > 0
     ? `${local.length} / 10 digits`
@@ -1224,7 +1232,6 @@ function SaudiMobileField({ value, onChange, error }: {
         Mobile Number
       </label>
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
-        {/* +966 prefix badge */}
         <div style={{
           display: 'flex', alignItems: 'center', paddingInline: 12,
           background: 'rgba(26,92,255,0.1)', border: '1.5px solid rgba(26,92,255,0.25)',
@@ -1244,7 +1251,7 @@ function SaudiMobileField({ value, onChange, error }: {
           style={{ borderRadius: '0 10px 10px 0', flex: 1 }}
         />
       </div>
-      <span className="wf-note" style={{ color: isComplete ? 'var(--green)' : local.length > 0 && !local.startsWith('05') ? 'var(--red)' : 'var(--muted)' }}>
+      <span className="wf-note" style={{ color: isComplete ? 'var(--green)' : isStartWrong ? 'var(--red)' : 'var(--muted)' }}>
         {note}
       </span>
       {error && <span className="err">{error}</span>}
