@@ -277,7 +277,7 @@ function HijriCalendar({ selected, onSelect }: {
           const isSelected = selected?.hy === viewYear && selected?.hm === viewMonth && selected?.hd === d
           // Disable future dates
           const greg = hijriToGregorian(`${viewYear}/${String(viewMonth).padStart(2,'0')}/${String(d).padStart(2,'0')}`)
-          const isFuture = greg ? new Date(greg + 'T00:00:00') > new Date() : false
+          const isFuture = (maxToday && greg) ? new Date(greg + 'T00:00:00') > new Date() : false
           return (
             <button
               key={d}
@@ -322,8 +322,9 @@ const navBtnStyle: React.CSSProperties = {
   flexShrink: 0, fontFamily: 'inherit',
 }
 
-function DateOfBirthField({ value, onChange, error }: {
+function DateOfBirthField({ value, onChange, error, label = 'Date of Birth', maxToday = true, note }: {
   value: string; onChange: (v: string) => void; error?: string
+  label?: string; maxToday?: boolean; note?: string
 }) {
   const [useHijri, setUseHijri]       = React.useState(false)
   const [showCalendar, setShowCalendar] = React.useState(false)
@@ -369,7 +370,7 @@ function DateOfBirthField({ value, onChange, error }: {
       {/* Label + toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
-          Date of Birth
+          {label}
         </label>
         <button
           type="button"
@@ -394,7 +395,7 @@ function DateOfBirthField({ value, onChange, error }: {
           <input
             type="date"
             value={value}
-            max={new Date().toISOString().split('T')[0]}
+            max={maxToday ? new Date().toISOString().split('T')[0] : '2100-12-31'}
             min="1900-01-01"
             onChange={e => onChange(e.target.value)}
           />
@@ -466,6 +467,7 @@ function DateOfBirthField({ value, onChange, error }: {
       )}
 
       {displayError && <span className="err">{displayError}</span>}
+      {note && !displayError && <span className="wf-note">{note}</span>}
     </div>
   )
 }
@@ -534,6 +536,12 @@ export default function OnboardingPage() {
       if (data.empStatus === 'military' && !data.employer) e.employer = 'Organisation name is required'
       if (data.empStatus === 'government' && !data.govtSector) e.govtSector = 'Government sector is required'
       if (['private', 'government', 'military', 'self'].includes(data.empStatus) && !data.profession) e.profession = 'Profession is required'
+      // Joining date: valid date, not before 1950
+      if (['private', 'government', 'military'].includes(data.empStatus) && data.joinDate) {
+        const jd = new Date(data.joinDate)
+        if (isNaN(jd.getTime())) e.joinDate = 'Please enter a valid joining date'
+        else if (jd.getFullYear() < 1950) e.joinDate = 'Joining date seems too far in the past'
+      }
       // education only required for employed/professional statuses
       const educationRequired = ['private', 'government', 'military', 'self'].includes(data.empStatus)
       if (educationRequired && !data.education) e.education = 'Education level is required'
@@ -1002,9 +1010,13 @@ function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerif
                     value={data.profession} onChange={e => set('profession')(e.target.value)} />
                 </WField>
                 {showJoinDate && (
-                  <WField label="Joining Date">
-                    <input type="date" value={data.joinDate} onChange={e => set('joinDate')(e.target.value)} />
-                  </WField>
+                  <DateOfBirthField
+                    label="Joining Date"
+                    value={data.joinDate}
+                    onChange={v => set('joinDate')(v)}
+                    maxToday={false}
+                    note="Date you joined your current employer"
+                  />
                 )}
               </div>
             )}
