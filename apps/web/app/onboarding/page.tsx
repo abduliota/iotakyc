@@ -887,14 +887,26 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
           </div>
           <div className="wf-row">
             <WField label="Nationality" error={errors.nationality}>
-              <select value={data.nationality} onChange={e => set('nationality')(e.target.value)}>
+              <select value={data.nationality} onChange={e => {
+                set('nationality')(e.target.value)
+                // Clear other nationality when Saudi is selected
+                if (e.target.value === 'sa') set('otherNat')('')
+              }}>
                 <option value="">Select nationality</option>
                 <option value="sa">Saudi Arabian</option>
                 <option value="other">Other</option>
               </select>
             </WField>
-            <WField label="Other Nationality (if any)">
-              <select value={data.otherNat} onChange={e => set('otherNat')(e.target.value)}>
+            <WField
+              label="Other Nationality (if any)"
+              note={data.nationality === 'sa' ? 'Not applicable for Saudi nationals' : undefined}
+            >
+              <select
+                value={data.nationality === 'sa' ? '' : data.otherNat}
+                onChange={e => set('otherNat')(e.target.value)}
+                disabled={data.nationality === 'sa'}
+                style={{ opacity: data.nationality === 'sa' ? 0.4 : 1, cursor: data.nationality === 'sa' ? 'not-allowed' : 'auto' }}
+              >
                 <option value="">None</option>
                 <option>American</option><option>British</option><option>Egyptian</option>
                 <option>Indian</option><option>Pakistani</option><option>Other</option>
