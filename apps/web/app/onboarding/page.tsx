@@ -559,7 +559,21 @@ export default function OnboardingPage() {
       if (!data.wdwAmount) e.wdwAmount = 'Required'
     }
     if (step === 3) {
-      if (!data.mobile) e.mobile = 'Mobile number is required'
+      // Saudi mobile validation: +966 5X XXX XXXX
+      // Accept: 05XXXXXXXX (10 digits) or +9665XXXXXXXX or 9665XXXXXXXX
+      const rawMobile = data.mobile.replace(/\s/g, '')
+      if (!rawMobile) {
+        e.mobile = 'Mobile number is required'
+      } else {
+        // Normalise to digits only then check
+        const digitsOnly = rawMobile.replace(/[^\d]/g, '')
+        const localPattern  = /^05\d{8}$/          // 05XXXXXXXX
+        const fullPattern   = /^9665\d{8}$/         // 9665XXXXXXXX
+        const plusPattern   = /^\+9665\d{8}$/       // +9665XXXXXXXX
+        if (!localPattern.test(rawMobile) && !fullPattern.test(digitsOnly) && !plusPattern.test(rawMobile)) {
+          e.mobile = 'Enter a valid Saudi mobile: 05XXXXXXXX or +9665XXXXXXXX'
+        }
+      }
     }
     if (step === 5) {
       if (addressState !== 'done') {
@@ -1162,6 +1176,82 @@ function Step3({ data, set, errors, onBack, onNext }: any) {
   )
 }
 
+// ── SaudiMobileField — +966 prefix + validated remaining digits ───────────────
+function SaudiMobileField({ value, onChange, error }: {
+  value: string; onChange: (v: string) => void; error?: string
+}) {
+  // Strip +966 / 966 prefix from stored value to show just the local part
+  const toLocal = (v: string) => {
+    const stripped = v.replace(/\s/g, '')
+    if (stripped.startsWith('+966')) return stripped.slice(4)
+    if (stripped.startsWith('966'))  return stripped.slice(3)
+    return stripped
+  }
+
+  const [local, setLocal] = React.useState(() => toLocal(value))
+
+  // Sync if parent resets the value
+  React.useEffect(() => { setLocal(toLocal(value)) }, [value])
+
+  const handleChange = (raw: string) => {
+    // Strip everything except digits
+    let digits = raw.replace(/[^\d]/g, '')
+    // If user pastes the full number starting with 966 or 00966, strip prefix
+    if (digits.startsWith('00966')) digits = digits.slice(5)
+    else if (digits.startsWith('966')) digits = digits.slice(3)
+    // Max 10 digits (05XXXXXXXX)
+    digits = digits.slice(0, 10)
+    setLocal(digits)
+    // Store as full international format
+    onChange(digits ? '+966' + digits.replace(/^0/, '') : '')
+  }
+
+  // Live feedback
+  const isValid = /^05\d{8}$/.test(local) || local === ''
+  const isComplete = /^05\d{8}$/.test(local)
+
+  const note = isComplete
+    ? `✓ +966 ${local.slice(1,3)} ${local.slice(3,6)} ${local.slice(6,9)} ${local.slice(9)}`
+    : local.length > 0 && !local.startsWith('05')
+    ? '🔴 Saudi mobiles start with 05'
+    : local.length > 0
+    ? `${local.length} / 10 digits`
+    : 'Format: 05XXXXXXXX — stored as +966'
+
+  return (
+    <div className={`wf${error ? ' has-error' : ''}`}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
+        Mobile Number
+      </label>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
+        {/* +966 prefix badge */}
+        <div style={{
+          display: 'flex', alignItems: 'center', paddingInline: 12,
+          background: 'rgba(26,92,255,0.1)', border: '1.5px solid rgba(26,92,255,0.25)',
+          borderRight: 'none', borderRadius: '10px 0 0 10px',
+          fontSize: 13, fontWeight: 700, color: 'var(--blue2)',
+          fontFamily: "'DM Mono', monospace", flexShrink: 0, whiteSpace: 'nowrap',
+        }}>
+          🇸🇦 +966
+        </div>
+        <input
+          type="tel"
+          inputMode="numeric"
+          placeholder="05XXXXXXXX"
+          value={local}
+          maxLength={10}
+          onChange={e => handleChange(e.target.value)}
+          style={{ borderRadius: '0 10px 10px 0', flex: 1 }}
+        />
+      </div>
+      <span className="wf-note" style={{ color: isComplete ? 'var(--green)' : local.length > 0 && !local.startsWith('05') ? 'var(--red)' : 'var(--muted)' }}>
+        {note}
+      </span>
+      {error && <span className="err">{error}</span>}
+    </div>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // STEP 4 — CONTACT & ADDITIONAL
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1173,9 +1263,11 @@ function Step4({ data, set, errors, onBack, onNext }: any) {
         <p className="wiz-sub">Your contact details and any overseas ties. Required for AML/CFT compliance.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
           <div className="wf-row">
-            <WField label="Mobile Number" error={errors.mobile}>
-              <input type="tel" placeholder="+966 5X XXX XXXX" value={data.mobile} onChange={e => set('mobile')(e.target.value)} />
-            </WField>
+            <SaudiMobileField
+              value={data.mobile}
+              onChange={v => set('mobile')(v)}
+              error={errors.mobile}
+            />
             <WField label="Home Phone (optional)">
               <input type="tel" placeholder="Home phone number" value={data.homePhone} onChange={e => set('homePhone')(e.target.value)} />
             </WField>
