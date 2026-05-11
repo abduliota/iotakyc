@@ -972,7 +972,20 @@ function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerif
           {EMP_OPTIONS.map(opt => (
             <div key={opt.val}
               className={`emp-card${data.empStatus === opt.val ? ' selected' : ''}`}
-              onClick={() => { set('empStatus')(opt.val); set('employer')(''); set('govtSector')(''); set('education')('') }}>
+              onClick={() => {
+                set('empStatus')(opt.val)
+                set('employer')('')
+                set('govtSector')('')
+                set('education')('')
+                // Auto-default Primary Source of Income to Salary for salaried statuses
+                const salariedStatuses = ['private', 'government', 'military', 'self', 'student', 'household']
+                if (salariedStatuses.includes(opt.val)) {
+                  set('incomeSource')('Salary')
+                } else {
+                  // Clear it for Unemployed, Housewife, Retired, Others — user picks manually
+                  set('incomeSource')('')
+                }
+              }}>
               <div className="emp-card-label">{opt.label}</div>
               <div className="emp-card-ar">{opt.ar}</div>
             </div>
