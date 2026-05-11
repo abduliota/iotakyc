@@ -198,61 +198,177 @@ const HIJRI_MONTHS = [
   'Ramadan','Shawwal','Dhul Qadah','Dhul Hijjah',
 ]
 
-// ── DateOfBirthField — Gregorian input with Hijri toggle ─────────────────────
+// ── DateOfBirthField — Gregorian input with Hijri calendar picker ────────────
+function HijriCalendar({ selected, onSelect }: {
+  selected: { hy: number; hm: number; hd: number } | null
+  onSelect: (hy: number, hm: number, hd: number) => void
+}) {
+  const currentHijri = gregorianToHijri(new Date().toISOString().split('T')[0])
+  const [cy, cm] = currentHijri.split('/').map(Number)
+
+  const [viewYear, setViewYear]   = React.useState(selected?.hy ?? cy)
+  const [viewMonth, setViewMonth] = React.useState(selected?.hm ?? cm)
+
+  const daysInMonth = (hy: number, hm: number) => (hm % 2 === 1 || hm === 12) ? 30 : 29
+  const totalDays = daysInMonth(viewYear, viewMonth)
+
+  const prevMonth = () => {
+    if (viewMonth === 1) { setViewMonth(12); setViewYear(y => y - 1) }
+    else setViewMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (viewMonth === 12) { setViewMonth(1); setViewYear(y => y + 1) }
+    else setViewMonth(m => m + 1)
+  }
+
+  // Year range: 1350–current Hijri year
+  const years = Array.from({ length: cy - 1350 + 1 }, (_, i) => 1350 + i).reverse()
+
+  return (
+    <div style={{
+      background: 'var(--navy2)', border: '1.5px solid rgba(255,255,255,0.1)',
+      borderRadius: 12, padding: 16, marginTop: 8,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    }}>
+      {/* Month / Year navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <button onClick={prevMonth} style={navBtnStyle}>‹</button>
+        <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+          <select
+            value={viewMonth}
+            onChange={e => setViewMonth(Number(e.target.value))}
+            style={{ flex: 1, padding: '5px 8px', fontSize: 12, borderRadius: 7, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', cursor: 'pointer', appearance: 'none' as const }}
+          >
+            {HIJRI_MONTHS.map((m, i) => (
+              <option key={i} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={viewYear}
+            onChange={e => setViewYear(Number(e.target.value))}
+            style={{ width: 72, padding: '5px 8px', fontSize: 12, borderRadius: 7, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', cursor: 'pointer', appearance: 'none' as const }}
+          >
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        <button onClick={nextMonth} style={navBtnStyle}>›</button>
+      </div>
+
+      {/* Day-of-week headers (Sun–Sat, Hijri weeks start Sunday) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--muted)', padding: '2px 0' }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Day grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+        {/* Leading empty cells — calculate weekday of 1st */}
+        {(() => {
+          const gregFirst = hijriToGregorian(`${viewYear}/${String(viewMonth).padStart(2,'0')}/01`)
+          const startDay = gregFirst ? new Date(gregFirst + 'T00:00:00').getDay() : 0
+          return Array.from({ length: startDay }, (_, i) => (
+            <div key={`e${i}`} />
+          ))
+        })()}
+        {/* Day buttons */}
+        {Array.from({ length: totalDays }, (_, i) => {
+          const d = i + 1
+          const isSelected = selected?.hy === viewYear && selected?.hm === viewMonth && selected?.hd === d
+          // Disable future dates
+          const greg = hijriToGregorian(`${viewYear}/${String(viewMonth).padStart(2,'0')}/${String(d).padStart(2,'0')}`)
+          const isFuture = greg ? new Date(greg + 'T00:00:00') > new Date() : false
+          return (
+            <button
+              key={d}
+              disabled={isFuture}
+              onClick={() => onSelect(viewYear, viewMonth, d)}
+              style={{
+                padding: '6px 2px', borderRadius: 7, border: 'none', cursor: isFuture ? 'not-allowed' : 'pointer',
+                background: isSelected ? 'var(--blue)' : 'rgba(255,255,255,0.04)',
+                color: isSelected ? 'white' : isFuture ? 'var(--muted)' : 'var(--text)',
+                fontSize: 12, fontWeight: isSelected ? 700 : 400,
+                transition: 'all 0.1s',
+                outline: 'none',
+                opacity: isFuture ? 0.35 : 1,
+              }}
+              onMouseEnter={e => { if (!isSelected && !isFuture) (e.target as HTMLElement).style.background = 'rgba(26,92,255,0.2)' }}
+              onMouseLeave={e => { if (!isSelected && !isFuture) (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+            >
+              {d}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Today shortcut */}
+      <div style={{ marginTop: 10, textAlign: 'center' }}>
+        <button
+          onClick={() => { setViewYear(cy); setViewMonth(cm) }}
+          style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+        >
+          Today: {currentHijri}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const navBtnStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 8, width: 30, height: 30, cursor: 'pointer',
+  color: 'var(--text)', fontSize: 18, fontWeight: 700,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  flexShrink: 0, fontFamily: 'inherit',
+}
+
 function DateOfBirthField({ value, onChange, error }: {
   value: string; onChange: (v: string) => void; error?: string
 }) {
-  const [useHijri, setUseHijri] = React.useState(false)
-  const [hijriRaw, setHijriRaw] = React.useState('')
-  const [hijriError, setHijriError] = React.useState('')
+  const [useHijri, setUseHijri]       = React.useState(false)
+  const [showCalendar, setShowCalendar] = React.useState(false)
 
-  // Derive Hijri display from Gregorian value
-  const hijriDisplay = value ? gregorianToHijri(value) : ''
+  // Parse currently selected date into Hijri parts
+  const selectedHijri = React.useMemo(() => {
+    if (!value) return null
+    const h = gregorianToHijri(value)
+    if (!h) return null
+    const [hy, hm, hd] = h.split('/').map(Number)
+    return { hy, hm, hd }
+  }, [value])
 
-  // When switching TO Hijri, pre-fill with current Hijri
+  const hijriDisplay = selectedHijri
+    ? `${selectedHijri.hy}/${String(selectedHijri.hm).padStart(2,'0')}/${String(selectedHijri.hd).padStart(2,'0')}`
+    : ''
+
+  const handleHijriSelect = (hy: number, hm: number, hd: number) => {
+    const greg = hijriToGregorian(`${hy}/${String(hm).padStart(2,'0')}/${String(hd).padStart(2,'0')}`)
+    if (greg) { onChange(greg); setShowCalendar(false) }
+  }
+
   const handleToggle = () => {
-    if (!useHijri) {
-      setHijriRaw(hijriDisplay)
-      setHijriError('')
-    }
     setUseHijri(h => !h)
+    setShowCalendar(false)
   }
 
-  const handleHijriChange = (raw: string) => {
-    setHijriRaw(raw)
-    setHijriError('')
-    // Auto-convert when format looks complete: YYYY/MM/DD
-    const clean = raw.replace(/-/g, '/')
-    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(clean)) {
-      const greg = hijriToGregorian(clean)
-      if (greg) {
-        onChange(greg)
-        setHijriError('')
-      } else {
-        setHijriError('Invalid Hijri date — check day/month values')
-      }
-    }
-  }
-
-  // Validate DOB: must be in past, age 0–120
-  const validateGregorian = (v: string) => {
-    if (!v) return ''
-    const d = new Date(v)
+  // Validation
+  const gregError = React.useMemo(() => {
+    if (!value) return ''
+    const d = new Date(value)
     const now = new Date()
     if (d > now) return 'Date of birth cannot be in the future'
     const age = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
     if (age > 120) return 'Please enter a valid date of birth'
     return ''
-  }
+  }, [value])
 
-  const gregError = value ? validateGregorian(value) : ''
-  const displayError = error || gregError || hijriError
+  const displayError = error || gregError
 
   return (
     <div className={`wf${displayError ? ' has-error' : ''}`}>
-      {/* Label row with Hijri toggle */}
+      {/* Label + toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
           Date of Birth
         </label>
         <button
@@ -272,59 +388,80 @@ function DateOfBirthField({ value, onChange, error }: {
         </button>
       </div>
 
-      {/* Gregorian input */}
+      {/* ── Gregorian mode ── */}
       {!useHijri && (
-        <input
-          type="date"
-          value={value}
-          max={new Date().toISOString().split('T')[0]}
-          min="1900-01-01"
-          onChange={e => onChange(e.target.value)}
-        />
-      )}
-
-      {/* Hijri input */}
-      {useHijri && (
         <div>
           <input
-            type="text"
-            placeholder="YYYY/MM/DD  e.g. 1410/05/15"
-            value={hijriRaw}
-            onChange={e => handleHijriChange(e.target.value)}
-            maxLength={10}
-            style={{ fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}
+            type="date"
+            value={value}
+            max={new Date().toISOString().split('T')[0]}
+            min="1900-01-01"
+            onChange={e => onChange(e.target.value)}
           />
-          {value && hijriDisplay && !hijriError && (
+          {value && hijriDisplay && !gregError && (
             <div style={{
-              marginTop: 6, padding: '6px 10px', borderRadius: 8,
-              background: 'rgba(0,200,255,0.06)', border: '1px solid rgba(0,200,255,0.15)',
-              fontSize: 11, color: 'var(--accent)', display: 'flex', gap: 10,
+              marginTop: 6, padding: '5px 10px', borderRadius: 8,
+              background: 'rgba(0,200,255,0.04)', border: '1px solid rgba(0,200,255,0.1)',
+              fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 6, alignItems: 'center',
             }}>
-              <span>🌙 {hijriDisplay}</span>
-              <span style={{ color: 'var(--muted)' }}>→</span>
-              <span style={{ color: 'var(--text2)' }}>
-                {new Date(value + 'T00:00:00').toLocaleDateString('en-SA', { day:'numeric', month:'long', year:'numeric' })}
+              <span>🌙</span>
+              <span>
+                {selectedHijri
+                  ? `${selectedHijri.hd} ${HIJRI_MONTHS[selectedHijri.hm - 1]} ${selectedHijri.hy} AH`
+                  : hijriDisplay}
               </span>
             </div>
           )}
         </div>
       )}
 
-      {/* Hijri month helper — shows when gregorian is set */}
-      {!useHijri && value && hijriDisplay && (
-        <div style={{
-          marginTop: 6, padding: '5px 10px', borderRadius: 8,
-          background: 'rgba(0,200,255,0.04)', border: '1px solid rgba(0,200,255,0.1)',
-          fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 6, alignItems: 'center',
-        }}>
-          <span>🌙</span>
-          <span>
-            {(() => {
-              const parts = hijriDisplay.split('/')
-              const hm = parseInt(parts[1]) - 1
-              return `${parts[2]} ${HIJRI_MONTHS[hm] ?? ''} ${parts[0]} AH`
-            })()}
-          </span>
+      {/* ── Hijri mode ── */}
+      {useHijri && (
+        <div>
+          {/* Trigger button — shows selected date or placeholder */}
+          <button
+            type="button"
+            onClick={() => setShowCalendar(c => !c)}
+            style={{
+              width: '100%', textAlign: 'left', padding: '13px 16px',
+              background: 'rgba(255,255,255,0.05)',
+              border: `1.5px solid ${showCalendar ? 'var(--blue2)' : 'rgba(255,255,255,0.06)'}`,
+              borderRadius: 10, color: value ? 'var(--text)' : 'var(--muted)',
+              fontFamily: "'DM Mono', monospace", fontSize: 14, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              boxShadow: showCalendar ? '0 0 0 3px rgba(26,92,255,0.12)' : 'none',
+              transition: 'all 0.15s',
+            }}
+          >
+            <span>
+              {value && hijriDisplay
+                ? `${hijriDisplay}  —  ${selectedHijri ? HIJRI_MONTHS[selectedHijri.hm - 1] : ''} ${selectedHijri?.hy ?? ''} AH`
+                : 'Select Hijri date'}
+            </span>
+            <span style={{ fontSize: 16, color: 'var(--muted)' }}>{showCalendar ? '▲' : '▼'}</span>
+          </button>
+
+          {/* Calendar dropdown */}
+          {showCalendar && (
+            <HijriCalendar
+              selected={selectedHijri}
+              onSelect={handleHijriSelect}
+            />
+          )}
+
+          {/* Gregorian equivalent */}
+          {value && hijriDisplay && !gregError && (
+            <div style={{
+              marginTop: 6, padding: '5px 10px', borderRadius: 8,
+              background: 'rgba(0,204,136,0.05)', border: '1px solid rgba(0,204,136,0.15)',
+              fontSize: 11, color: 'var(--green)', display: 'flex', gap: 6, alignItems: 'center',
+            }}>
+              <span>📅</span>
+              <span>
+                {new Date(value + 'T00:00:00').toLocaleDateString('en-SA', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
