@@ -30,7 +30,8 @@ def _create_session_db(session_id: str, iqama: str, user_id: str, now: str) -> d
     # Upsert into kyc_sessions
     db.table("kyc_sessions").insert({
         "id": session_id,
-        "user_id": None,          # no auth user yet — Phase 1 wires this to Supabase Auth
+        "user_id": None,
+        "iqama": iqama,           # store iqama on session for easy lookup
         "current_step": 1,
         "status": "in_progress",
         "started_at": now,
