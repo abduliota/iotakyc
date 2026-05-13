@@ -11,6 +11,9 @@ interface Submission {
   iqama: string
   full_name: string
   nationality: string
+  gender?: string
+  marital_status?: string
+  date_of_birth?: string
   employment_status: string
   employer_name?: string
   government_sector?: string
@@ -38,6 +41,7 @@ interface Submission {
   status: Status
   submitted_at: string
   audit: AuditEntry[]
+  kyc_data?: Record<string, any>
 }
 
 // ── Demo data ──────────────────────────────────────────────────────────────────
@@ -207,9 +211,9 @@ function Modal({ sub, onClose, onAction }: {
             <Section title="Personal Information">
               <DataRow label="Full Name" value={sub.full_name} />
               <DataRow label="Nationality" value={sub.nationality} />
-              <DataRow label="Gender" value={sub.kyc_data?.gender} />
-              <DataRow label="Marital Status" value={sub.kyc_data?.marital_status} />
-              <DataRow label="Date of Birth" value={sub.kyc_data?.date_of_birth} />
+              <DataRow label="Gender" value={sub.gender} />
+              <DataRow label="Marital Status" value={sub.marital_status} />
+              <DataRow label="Date of Birth" value={sub.date_of_birth} />
               <DataRow label="Mobile Number" value={sub.mobile_number} />
             </Section>
             <Section title="National Address">
@@ -401,6 +405,9 @@ export default function DashboardPage() {
           iqama: item.iqama || item.kyc_data?.iqama || item.kyc_data?.session_id?.slice(0,8) || '—',
           full_name: item.full_name || item.kyc_data?.full_name || item.kyc_data?.iqama || 'Unknown',
           nationality: item.kyc_data?.nationality || '—',
+          gender: item.kyc_data?.gender,
+          marital_status: item.kyc_data?.marital_status,
+          date_of_birth: item.kyc_data?.date_of_birth,
           employment_status: item.kyc_data?.employment_status || '—',
           employer_name: item.kyc_data?.employer_name,
           government_sector: item.kyc_data?.government_sector,
