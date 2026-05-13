@@ -886,8 +886,8 @@ export default function OnboardingPage() {
       {/* Step content */}
       <div className="wiz-body">
         <div key={animKey} className={animClass} style={{ display: 'contents' }}>
-          {step === 0 && <Step1 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} />}
-          {step === 1 && <Step2 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} verifying={verifying} verified={verified} onVerify={verifyEmployer} />}
+          {step === 0 && <Step1 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} clearError={clearError} />}
+          {step === 1 && <Step2 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} verifying={verifying} verified={verified} onVerify={verifyEmployer} clearError={clearError} />}
           {step === 2 && <Step3 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} />}
           {step === 3 && <Step4 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} />}
           {step === 4 && <Step5 data={data} set={set} errors={errors} onBack={goBack} onNext={goNext} setTaxCountries={setTaxCountries} />}
@@ -901,7 +901,7 @@ export default function OnboardingPage() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STEP 1 — PERSONAL INFO
 // ═══════════════════════════════════════════════════════════════════════════════
-function Step1({ data, set, errors, onBack, onNext }: any) {
+function Step1({ data, set, errors, onBack, onNext, clearError }: any) {
   return (
     <>
       <div className="wiz-left">
@@ -1018,7 +1018,7 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STEP 2 — EMPLOYMENT
 // ═══════════════════════════════════════════════════════════════════════════════
-function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerify }: any) {
+function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerify, clearError }: any) {
   const showEmployer   = ['private', 'military'].includes(data.empStatus)
   const showGovSector  = data.empStatus === 'government'
   const showProfession = ['private', 'government', 'military', 'self'].includes(data.empStatus)
