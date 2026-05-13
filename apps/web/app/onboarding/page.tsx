@@ -622,7 +622,7 @@ export default function OnboardingPage() {
     if (step === STEPS.length - 1) {
       setSubmitting(true)
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+        const API = process.env.NEXT_PUBLIC_API_URL ?? 'https://iotakyc.onrender.com'
 
         // 1. Create session
         const sessionRes = await fetch(`${API}/kyc/session`, {
@@ -630,8 +630,13 @@ export default function OnboardingPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ iqama: data.iqama, user_id: `user-${data.iqama}` }),
         })
+        if (!sessionRes.ok) {
+          const err = await sessionRes.text()
+          throw new Error(`Session creation failed (${sessionRes.status}): ${err}`)
+        }
         const session = await sessionRes.json()
         const sid = session.id
+        if (!sid) throw new Error('Backend returned no session ID — check backend logs')
 
         // 2. Save step 1 — Personal Info
         await fetch(`${API}/kyc/session/${sid}/step/1`, {
@@ -739,15 +744,22 @@ export default function OnboardingPage() {
         })
 
         // 8. Final submit — triggers ELMNatheer watchlist check server-side
-        await fetch(`${API}/kyc/session/${sid}/submit`, {
+        const submitRes = await fetch(`${API}/kyc/session/${sid}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),
         })
+        if (!submitRes.ok) {
+          const err = await submitRes.text()
+          throw new Error(`Final submit failed (${submitRes.status}): ${err}`)
+        }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error('KYC submit failed:', err)
-        // Still show success screen — in production show error instead
+        setSubmitting(false)
+        setErrors({ iqama: `Submission failed: ${err.message ?? 'Cannot reach backend. Is it running?'}` })
+        setStep(0) // Send back to step 1 to show the error visibly
+        return
       }
       setSubmitting(false)
       setScreen('success')

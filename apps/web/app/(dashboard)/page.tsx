@@ -371,7 +371,7 @@ function Modal({ sub, onClose, onAction }: {
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────────
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'https://iotakyc.onrender.com'
 
 export default function DashboardPage() {
   const [subs, setSubs] = useState<Submission[]>([])
@@ -472,7 +472,7 @@ export default function DashboardPage() {
     }))
 
     // Also persist to backend
-    fetch(`http://localhost:8000/admin/submissions/${id}`, {
+    fetch(`${API}/admin/submissions/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, notes }),
