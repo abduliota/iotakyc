@@ -495,6 +495,10 @@ export default function OnboardingPage() {
   const set = (field: keyof WizData) => (val: string | boolean) =>
     setData(prev => ({ ...prev, [field]: val }))
 
+  // Clear a specific field error when user changes the value
+  const clearError = (field: keyof WizData) =>
+    setErrors(prev => { const e = { ...prev }; delete e[field]; return e })
+
   const setTaxCountries = (fn: (prev: TaxCountry[]) => TaxCountry[]) =>
     setData(prev => ({ ...prev, taxCountries: fn(prev.taxCountries) }))
 
@@ -618,7 +622,7 @@ export default function OnboardingPage() {
     if (step === STEPS.length - 1) {
       setSubmitting(true)
       try {
-        const API = 'http://localhost:8000'
+        const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
         // 1. Create session
         const sessionRes = await fetch(`${API}/kyc/session`, {
@@ -919,15 +923,15 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
           >
             <input type="text" inputMode="numeric" maxLength={10}
               placeholder="10-digit ID number (1xxxxxxxxx or 2xxxxxxxxx)"
-              value={data.iqama} onChange={e => set('iqama')(e.target.value)} />
+              value={data.iqama} onChange={e => { set('iqama')(e.target.value); clearError('iqama') }} />
           </WField>
           <div className="wf-row">
             <WField label="Full Name (as on ID)" error={errors.fullName}>
-              <input type="text" placeholder="Full legal name" value={data.fullName} onChange={e => set('fullName')(e.target.value)} />
+              <input type="text" placeholder="Full legal name" value={data.fullName} onChange={e => { set('fullName')(e.target.value); clearError('fullName') }} />
             </WField>
             <DateOfBirthField
               value={data.dob}
-              onChange={v => set('dob')(v)}
+              onChange={v => { set('dob')(v); clearError('dob') }}
               error={errors.dob}
             />
           </div>
@@ -946,7 +950,7 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
               </select>
             </WField>
             <WField label="Marital Status" error={errors.maritalStatus}>
-              <select value={data.maritalStatus} onChange={e => set('maritalStatus')(e.target.value)}>
+              <select value={data.maritalStatus} onChange={e => { set('maritalStatus')(e.target.value); clearError('maritalStatus') }}>
                 <option value="">Select status</option>
                 <option value="single">Single</option>
                 <option value="married">Married</option>
@@ -1093,7 +1097,7 @@ function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerif
                   <DateOfBirthField
                     label="Joining Date"
                     value={data.joinDate}
-                    onChange={v => set('joinDate')(v)}
+                    onChange={v => { set('joinDate')(v); clearError('joinDate') }}
                     maxToday={false}
                     note="Date you joined your current employer"
                   />

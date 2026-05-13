@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { API_BASE_URL } from '../../lib/api'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Status = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'flagged'
@@ -365,7 +364,7 @@ function Modal({ sub, onClose, onAction }: {
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────────
-const API = API_BASE_URL
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 export default function DashboardPage() {
   const [subs, setSubs] = useState<Submission[]>([])
@@ -383,7 +382,8 @@ export default function DashboardPage() {
   // Auto-fetch from backend on mount + every 10s
   useEffect(() => {
     fetchFromBackend()
-    const t = setInterval(fetchFromBackend, 10000)
+    // Poll every 5 seconds for new submissions
+    const t = setInterval(fetchFromBackend, 5000)
     return () => clearInterval(t)
   }, [])
 
@@ -395,8 +395,8 @@ export default function DashboardPage() {
         // Backend returns { items, total } — map to our Submission shape
         const items: Submission[] = (data.items || []).map((item: any) => ({
           id: item.id,
-          iqama: item.iqama || item.kyc_data?.iqama || '—',
-          full_name: item.full_name || item.kyc_data?.full_name || 'Unknown',
+          iqama: item.iqama || item.kyc_data?.iqama || item.kyc_data?.session_id?.slice(0,8) || '—',
+          full_name: item.full_name || item.kyc_data?.full_name || item.kyc_data?.iqama || 'Unknown',
           nationality: item.kyc_data?.nationality || '—',
           employment_status: item.kyc_data?.employment_status || '—',
           employer_name: item.kyc_data?.employer_name,
@@ -462,7 +462,7 @@ export default function DashboardPage() {
     }))
 
     // Also persist to backend
-    fetch(`${API}/admin/submissions/${id}`, {
+    fetch(`http://localhost:8000/admin/submissions/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, notes }),
@@ -541,7 +541,9 @@ export default function DashboardPage() {
               <tr>
                 <td colSpan={7} style={{ padding: 48, textAlign: 'center', color: 'var(--muted)' }}>
                   {subs.length === 0
-                    ? 'No submissions yet — click "Inject Demo Submissions" to test'
+                    ? backendAvailable
+                    ? 'No submissions yet — submit a KYC application from the wizard to see it here'
+                    : 'No submissions yet — click "Load Demo Submissions" to test'
                     : `No ${filter.replace('_', ' ')} submissions`}
                 </td>
               </tr>
