@@ -14,6 +14,7 @@ interface WizData {
   // Step 1
   iqama: string; fullName: string; dob: string; nationality: string
   otherNat: string; cob: string; cityob: string; regionob: string
+  gender: string; maritalStatus: string
   // Step 2
   empStatus: string; govtSector: string; employer: string
   profession: string; joinDate: string; education: string
@@ -39,6 +40,7 @@ interface WizData {
 const INITIAL: WizData = {
   iqama: '', fullName: '', dob: '', nationality: '', otherNat: '',
   cob: '', cityob: '', regionob: '',
+  gender: '', maritalStatus: '',
   empStatus: '', govtSector: '', employer: '', profession: '', joinDate: '', education: '',
   incomeSource: '', incomeRange: '', otherSource: '', addSource: '', addRange: '',
   purpose: '', currency: '', depCount: '', depAmount: '', wdwCount: '', wdwAmount: '',
@@ -514,7 +516,7 @@ export default function OnboardingPage() {
         e.iqama = `ID must start with 1 (Saudi NIN) or 2 (Iqama/Resident) — got "${data.iqama[0]}"`
       }
       if (!data.fullName) e.fullName = 'Full name is required'
-      // DOB validation — must be provided, in the past, age < 120
+      // DOB validation — must be provided, in the past, age 18–120
       if (!data.dob) {
         e.dob = 'Date of birth is required'
       } else {
@@ -524,9 +526,12 @@ export default function OnboardingPage() {
           e.dob = 'Date of birth cannot be in the future'
         } else {
           const age = (now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-          if (age > 120) e.dob = 'Please enter a valid date of birth'
+          if (age < 18) e.dob = 'Applicant must be at least 18 years old'
+          else if (age > 120) e.dob = 'Please enter a valid date of birth'
         }
       }
+      if (!data.gender) e.gender = 'Gender is required'
+      if (!data.maritalStatus) e.maritalStatus = 'Marital status is required'
       if (!data.nationality) e.nationality = 'Nationality is required'
       if (!data.cob) e.cob = 'Country of birth is required'
       if (!data.cityob) e.cityob = 'City of birth is required'
@@ -538,19 +543,36 @@ export default function OnboardingPage() {
       if (data.empStatus === 'military' && !data.employer) e.employer = 'Organisation name is required'
       if (data.empStatus === 'government' && !data.govtSector) e.govtSector = 'Government sector is required'
       if (['private', 'government', 'military', 'self'].includes(data.empStatus) && !data.profession) e.profession = 'Profession is required'
-      // Joining date: valid date, not before 1950
+      // Joining date: must be after DOB and not equal to DOB
       if (['private', 'government', 'military'].includes(data.empStatus) && data.joinDate) {
         const jd = new Date(data.joinDate)
-        if (isNaN(jd.getTime())) e.joinDate = 'Please enter a valid joining date'
-        else if (jd.getFullYear() < 1950) e.joinDate = 'Joining date seems too far in the past'
+        if (isNaN(jd.getTime())) {
+          e.joinDate = 'Please enter a valid joining date'
+        } else if (data.dob) {
+          const dob = new Date(data.dob)
+          if (jd <= dob) e.joinDate = 'Joining date must be after your date of birth'
+          else if (jd > new Date()) e.joinDate = 'Joining date cannot be in the future'
+        }
       }
       // education only required for employed/professional statuses
       const educationRequired = ['private', 'government', 'military', 'self'].includes(data.empStatus)
       if (educationRequired && !data.education) e.education = 'Education level is required'
     }
     if (step === 2) {
-      if (!data.incomeSource) e.incomeSource = 'Required'
-      if (!data.incomeRange) e.incomeRange = 'Required'
+      // Housewife/Student/Unemployed must have 'Others' as income source
+      const nonSalariedStatuses = ['housewife', 'student', 'unemployed']
+      if (nonSalariedStatuses.includes(data.empStatus)) {
+        if (data.incomeSource !== 'Other') e.incomeSource = 'Must be "Other" for your employment status'
+      } else {
+        if (!data.incomeSource) e.incomeSource = 'Required'
+      }
+      // Income range cap: Housewife/Student/Unemployed cannot exceed 10K SAR
+      const cappedRanges = ['10,000 – 20,000','20,000 – 35,000','35,000 – 50,000','More than 50,000']
+      if (nonSalariedStatuses.includes(data.empStatus) && cappedRanges.includes(data.incomeRange)) {
+        e.incomeRange = 'Income range cannot exceed SAR 10,000 for your employment status'
+      } else if (!data.incomeRange) {
+        e.incomeRange = 'Required'
+      }
       if (!data.purpose) e.purpose = 'Required'
       if (!data.currency) e.currency = 'Required'
       if (!data.depCount) e.depCount = 'Required'
@@ -910,6 +932,30 @@ function Step1({ data, set, errors, onBack, onNext }: any) {
             />
           </div>
           <div className="wf-row">
+            <WField label="Gender" error={errors.gender}>
+              <select value={data.gender} onChange={e => {
+                set('gender')(e.target.value)
+                // If gender changes to Male and empStatus is housewife, clear it
+                if (e.target.value === 'male' && data.empStatus === 'housewife') {
+                  set('empStatus')(''); set('incomeSource')('')
+                }
+              }}>
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </WField>
+            <WField label="Marital Status" error={errors.maritalStatus}>
+              <select value={data.maritalStatus} onChange={e => set('maritalStatus')(e.target.value)}>
+                <option value="">Select status</option>
+                <option value="single">Single</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="widowed">Widowed</option>
+              </select>
+            </WField>
+          </div>
+          <div className="wf-row">
             <WField label="Nationality" error={errors.nationality}>
               <select value={data.nationality} onChange={e => {
                 set('nationality')(e.target.value)
@@ -983,7 +1029,7 @@ function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerif
         <p className="wiz-sub">Select your current employment status. Additional fields appear based on your selection.</p>
 
         <div className="emp-grid">
-          {EMP_OPTIONS.map(opt => (
+          {EMP_OPTIONS.filter(opt => !(opt.val === 'housewife' && data.gender === 'male')).map(opt => (
             <div key={opt.val}
               className={`emp-card${data.empStatus === opt.val ? ' selected' : ''}`}
               onClick={() => {
@@ -991,13 +1037,18 @@ function Step2({ data, set, errors, onBack, onNext, verifying, verified, onVerif
                 set('employer')('')
                 set('govtSector')('')
                 set('education')('')
-                // Auto-default Primary Source of Income to Salary for salaried statuses
-                const salariedStatuses = ['private', 'government', 'military', 'self', 'student', 'household']
+                // Auto-default Primary Source of Income based on employment
+                const salariedStatuses = ['private', 'government', 'military', 'self', 'household']
+                const nonSalariedStatuses = ['housewife', 'student', 'unemployed']
                 if (salariedStatuses.includes(opt.val)) {
                   set('incomeSource')('Salary')
+                  set('incomeRange')('')
+                } else if (nonSalariedStatuses.includes(opt.val)) {
+                  set('incomeSource')('Other')
+                  set('incomeRange')('')
                 } else {
-                  // Clear it for Unemployed, Housewife, Retired, Others — user picks manually
                   set('incomeSource')('')
+                  set('incomeRange')('')
                 }
               }}>
               <div className="emp-card-label">{opt.label}</div>
@@ -1084,16 +1135,31 @@ function Step3({ data, set, errors, onBack, onNext }: any) {
         <p className="wiz-sub">Required by SAMA regulations. Helps configure your account correctly and monitor for unusual activity.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
           <div className="wf-row">
-            <WField label="Primary Source of Income" error={errors.incomeSource}>
-              <select value={data.incomeSource} onChange={e => set('incomeSource')(e.target.value)}>
+            <WField
+              label="Primary Source of Income"
+              error={errors.incomeSource}
+              note={['housewife','student','unemployed'].includes(data.empStatus) ? 'Fixed as "Other" for your employment status' : undefined}
+            >
+              <select
+                value={data.incomeSource}
+                onChange={e => set('incomeSource')(e.target.value)}
+                disabled={['housewife','student','unemployed'].includes(data.empStatus)}
+                style={{ opacity: ['housewife','student','unemployed'].includes(data.empStatus) ? 0.6 : 1 }}
+              >
                 <option value="">Select source</option>
                 {['Salary','Business','Investments','Pension / Retirement','Inheritance','Other'].map(s => <option key={s}>{s}</option>)}
               </select>
             </WField>
-            <WField label="Income Range (SAR / month)" error={errors.incomeRange}>
+            <WField
+              label="Income Range (SAR / month)"
+              error={errors.incomeRange}
+              note={['housewife','student','unemployed'].includes(data.empStatus) ? 'Capped at SAR 10,000 for your employment status' : undefined}
+            >
               <select value={data.incomeRange} onChange={e => set('incomeRange')(e.target.value)}>
                 <option value="">Select range</option>
-                {['Less than 5,000','5,000 – 10,000','10,000 – 20,000','20,000 – 35,000','35,000 – 50,000','More than 50,000'].map(r => <option key={r}>{r}</option>)}
+                {(['Less than 5,000','5,000 – 10,000','10,000 – 20,000','20,000 – 35,000','35,000 – 50,000','More than 50,000'] as const)
+                  .filter(r => !(['housewife','student','unemployed'].includes(data.empStatus)) || ['Less than 5,000','5,000 – 10,000'].includes(r))
+                  .map(r => <option key={r}>{r}</option>)}
               </select>
             </WField>
           </div>
