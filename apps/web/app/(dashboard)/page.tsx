@@ -207,6 +207,9 @@ function Modal({ sub, onClose, onAction }: {
             <Section title="Personal Information">
               <DataRow label="Full Name" value={sub.full_name} />
               <DataRow label="Nationality" value={sub.nationality} />
+              <DataRow label="Gender" value={sub.kyc_data?.gender} />
+              <DataRow label="Marital Status" value={sub.kyc_data?.marital_status} />
+              <DataRow label="Date of Birth" value={sub.kyc_data?.date_of_birth} />
               <DataRow label="Mobile Number" value={sub.mobile_number} />
             </Section>
             <Section title="National Address">

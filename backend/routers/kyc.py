@@ -60,12 +60,38 @@ def _get_session_db(session_id: str) -> Optional[dict]:
     res = db.table("kyc_sessions").select("*").eq("id", session_id).single().execute()
     return res.data if res.data else None
 
+# All valid kyc_data columns — must match Supabase schema exactly
+KYC_DATA_COLUMNS = {
+    "iqama","full_name","date_of_birth","nationality","other_nationality",
+    "country_of_birth","city_of_birth","region_of_birth","gender","marital_status",
+    "employment_status","employer_name","government_sector","profession",
+    "joining_date","education",
+    "primary_source_of_income","income_range","other_source_of_income",
+    "additional_income_source","additional_monthly_income_range",
+    "purpose_of_account","account_currency",
+    "expected_monthly_deposit_count","expected_monthly_deposit_amount",
+    "expected_monthly_withdrawal_count","expected_monthly_withdrawal_amount",
+    "mobile_number","home_phone",
+    "has_residence_outside_ksa","residence_country","residence_postal",
+    "residence_street","residence_city","residence_district",
+    "residence_unit","residence_po_box","home_contact",
+    "has_immigrant_visa","visa_country","visa_type","additional_contact",
+    "tax_resident_outside_ksa","tax_countries","us_person","ssn_itin_atin",
+    "is_pep","pep_relationship","pep_declaration_note",
+    "building_number","street","district","city","postal_code",
+    "additional_number","unit_number","po_box",
+    "elm_result","elm_result_code","elm_checked_at","updated_at",
+}
+
 def _save_step_db(session_id: str, step: int, body: dict) -> dict:
     db = get_db()
     now = _now()
 
-    # Filter out None and empty string values
-    clean = {k: v for k, v in body.items() if v is not None and v != ""}
+    # Only keep known columns + non-empty values — prevents Supabase rejecting unknown fields
+    clean = {
+        k: v for k, v in body.items()
+        if k in KYC_DATA_COLUMNS and v is not None and v != ""
+    }
     clean["updated_at"] = now
 
     # Upsert into kyc_data

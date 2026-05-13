@@ -646,6 +646,8 @@ export default function OnboardingPage() {
             country_of_birth: data.cob,
             city_of_birth: data.cityob,
             region_of_birth: data.regionob,
+            gender: data.gender,
+            marital_status: data.maritalStatus,
           }),
         })
 
@@ -695,6 +697,9 @@ export default function OnboardingPage() {
             residence_street: data.resStreet,
             residence_city: data.resCity,
             residence_district: data.resDistrict,
+            residence_unit: data.resUnit,
+            residence_po_box: data.resPobox,
+            home_contact: data.homeContact,
             has_immigrant_visa: data.hasVisa,
             visa_country: data.visaCountry,
             visa_type: data.visaType,
