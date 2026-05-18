@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ThemeProvider } from '../components/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'IOTA KYC Portal',
@@ -15,8 +16,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
+        {/* Prevent flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var t = localStorage.getItem('kyc-theme');
+              if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+              document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+          })();
+        `}} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

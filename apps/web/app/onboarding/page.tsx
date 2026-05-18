@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useRef, useCallback } from 'react'
 import './wizard.css'
+import { ThemeToggle } from '../../components/ThemeProvider'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Screen = 'intro' | 'wizard' | 'success'
@@ -806,7 +807,10 @@ export default function OnboardingPage() {
       <div className="wizard-screen">
         <div className="wiz-topbar">
           <div className="wiz-brand"><div className="wiz-brand-dot" />IOTA KYC</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Customer Onboarding</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <ThemeToggle />
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Customer Onboarding</span>
+          </div>
         </div>
         <div className="intro-wrap">
           <div className="intro-card">
@@ -883,9 +887,12 @@ export default function OnboardingPage() {
       <div className="wiz-topbar">
         <div className="wiz-brand"><div className="wiz-brand-dot" />IOTA KYC</div>
         <div style={{ fontSize: 12, color: 'var(--muted)' }}>Step {step + 1} of {STEPS.length}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
-          Auto-saved
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ThemeToggle />
+          <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
+            Auto-saved
+          </div>
         </div>
       </div>
 
