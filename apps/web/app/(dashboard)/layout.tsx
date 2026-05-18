@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { API_BASE_URL } from '../../lib/api'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://iotakyc.onrender.com'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
