@@ -9,12 +9,12 @@ const ThemeContext = createContext<{
 }>({ theme: 'dark', toggle: () => {} })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
     // Read saved preference
     const saved = localStorage.getItem('kyc-theme') as Theme | null
-    const preferred = saved ?? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+    const preferred = saved ?? 'light'
     setTheme(preferred)
     document.documentElement.setAttribute('data-theme', preferred)
   }, [])

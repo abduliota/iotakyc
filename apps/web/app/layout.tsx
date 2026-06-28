@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           (function() {
             try {
               var t = localStorage.getItem('kyc-theme');
-              if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+              if (!t) t = 'light';
               document.documentElement.setAttribute('data-theme', t);
             } catch(e) {}
           })();
