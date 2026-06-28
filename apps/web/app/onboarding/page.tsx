@@ -806,7 +806,7 @@ export default function OnboardingPage() {
     return (
       <div className="wizard-screen">
         <div className="wiz-topbar">
-          <div className="wiz-brand"><img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{width:38,height:38,borderRadius:9,objectFit:"contain",background:"white",padding:2}} />IOTA KYC</div>
+          <div className="wiz-brand"><img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{width:48,height:48,borderRadius:11,objectFit:"contain",background:"white",padding:3}} />IOTA KYC</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <ThemeToggle />
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>Customer Onboarding</span>
@@ -853,7 +853,7 @@ export default function OnboardingPage() {
     return (
       <div className="wizard-screen">
         <div className="wiz-topbar">
-          <div className="wiz-brand"><img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{width:38,height:38,borderRadius:9,objectFit:"contain",background:"white",padding:2}} />IOTA KYC</div>
+          <div className="wiz-brand"><img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{width:48,height:48,borderRadius:11,objectFit:"contain",background:"white",padding:3}} />IOTA KYC</div>
         </div>
         <div className="success-wrap">
           <div className="success-card">
@@ -885,7 +885,7 @@ export default function OnboardingPage() {
     <div className="wizard-screen">
       {/* Topbar */}
       <div className="wiz-topbar">
-        <div className="wiz-brand"><img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{width:38,height:38,borderRadius:9,objectFit:"contain",background:"white",padding:2}} />IOTA KYC</div>
+        <div className="wiz-brand"><img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{width:48,height:48,borderRadius:11,objectFit:"contain",background:"white",padding:3}} />IOTA KYC</div>
         <div style={{ fontSize: 12, color: 'var(--muted)' }}>Step {step + 1} of {STEPS.length}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <ThemeToggle />
