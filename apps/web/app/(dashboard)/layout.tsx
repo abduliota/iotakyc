@@ -47,10 +47,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 20,
         boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease',
       }}>
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--accent)' }}>IOTA Technologies</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 2 }}>KYC Portal</div>
-          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Agent Dashboard v1.0</div>
+        <div style={{ padding: '20px 20px 18px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <img src="https://iotalogostorage.blob.core.windows.net/assets/iotaicon.png" alt="IOTA" style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain', background: 'white', padding: 2 }} />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent)', lineHeight: 1.2 }}>IOTA Technologies</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>KYC Portal</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--muted)' }}>Agent Dashboard v1.0</div>
         </div>
 
         <nav style={{ padding: '16px 0', flex: 1 }}>
